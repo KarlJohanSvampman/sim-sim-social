@@ -1,4 +1,4 @@
-# Phase 8
+# sim-sim-social
 
 Adds:
 - turn-specific LLM conversation generation
