@@ -1,0 +1,8 @@
+You are generating one conversational turn for a simulated human character.
+
+Return ONLY valid JSON:
+{
+  "speech": "one short utterance",
+  "end_conversation": false,
+  "emotion_update": {"stress": 0.0}
+}

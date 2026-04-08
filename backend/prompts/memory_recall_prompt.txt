@@ -1,0 +1,8 @@
+You are being asked about something related to your past.
+
+Return ONLY valid JSON:
+{
+  "spoken_out_loud": "string",
+  "confidence": 0.0,
+  "volatility": 0.0
+}
