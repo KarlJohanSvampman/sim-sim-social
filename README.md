@@ -1,7 +1,12 @@
-# sim-sim-social
+# Phase 10
 
-Adds:
-- turn-specific LLM conversation generation
-- memory recall prompt used during questioning
-- addiction-aware and impairment-aware cognition
-- operator controls for character inspection/editing
+This repo upgrades the prototype to include:
+- Postgres + Redis persistence
+- Operator replay scrubber with timeline playback controls
+- Relationship-driven autonomous conversation goal selection
+- Institutional systems layered onto the persistent world
+
+Run with:
+```bash
+docker compose up --build
+```

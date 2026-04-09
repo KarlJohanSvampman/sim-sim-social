@@ -1,19 +1,24 @@
 from services.state import get_world
-from services.hazards import inject_hazard as inject_hazard_into_world
+from services.db import upsert_character, log_event
+from services.institutions import assign_role
+
 def inject_news(content):
-    get_world().setdefault("news", []).append({"content":content})
-def inject_hazard(hazard_type, location, intensity=1.0):
-    inject_hazard_into_world(get_world(), hazard_type, location, intensity)
+    world = get_world()
+    world.setdefault("news", []).append({"content": content})
+    log_event(world["tick"], "news_injected", None, None, {"content": content})
+
 def get_character(char_id):
     return get_world()["characters"].get(char_id)
+
 def patch_character(char_id, updates):
-    world=get_world()
-    c=world["characters"].get(char_id)
+    world = get_world()
+    c = world["characters"].get(char_id)
     if not c:
         return None
-    for k,v in updates.items():
-        if isinstance(v, dict) and isinstance(c.get(k), dict):
-            c[k].update(v)
-        else:
-            c[k]=v
+    for k, v in updates.items():
+        c[k] = v if not isinstance(v, dict) or not isinstance(c.get(k), dict) else {**c[k], **v}
+    if updates.get("institution_role"):
+        assign_role(world, char_id, "inst_news", updates["institution_role"])
+    upsert_character(char_id, c)
+    log_event(world["tick"], "character_patched", char_id, None, updates)
     return c

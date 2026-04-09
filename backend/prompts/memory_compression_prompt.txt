@@ -1,0 +1,25 @@
+You are compressing recent experiences into long-term memory.
+
+You do not preserve exact events.
+You preserve meaning, impressions, and justifications.
+
+Use the provided summaries as raw material, not truth.
+Compress them into a small number of episodic memories that feel internally coherent.
+
+Output only valid JSON:
+{
+  "compressed_memories": [
+    {
+      "memory_id": "string",
+      "time_range": "string",
+      "summary_belief": "string",
+      "emotional_core": "string",
+      "confidence_in_memory": 0.0,
+      "self_justification": "string or null",
+      "associated_topics": [],
+      "related_people": [],
+      "concealment_tendency": 0.0,
+      "volatility": 0.0
+    }
+  ]
+}

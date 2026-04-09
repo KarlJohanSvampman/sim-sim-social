@@ -1,0 +1,281 @@
+# Merged archive manifest
+
+This repository was created by merging the following archives in order. Later archives overwrite earlier files on path conflicts.
+
+1. `simulation_repo.zip`
+2. `full_sim_repo.zip`
+3. `final_sim_repo.zip`
+4. `full_integration_repo.zip`
+5. `phase1_cognition_repo.zip`
+6. `phase2_perception_grid_movement_repo.zip`
+7. `phase5_objects_needs_hazards_repo.zip`
+8. `phase7_validation_damage_inventory_addiction_repo.zip`
+9. `phase8_conversation_recall_operator_repo.zip`
+10. `phase9_relationships_timeline_persistence_repo.zip`
+11. `phase10_postgres_redis_replay_institutions_repo.zip`
+
+Total files in final merged tree: **55**
+Overwritten paths during merge: **204**
+
+## Final owner by path
+- `.env.example` ← `phase10_postgres_redis_replay_institutions_repo.zip`
+- `README.md` ← `phase10_postgres_redis_replay_institutions_repo.zip`
+- `backend/Dockerfile` ← `phase10_postgres_redis_replay_institutions_repo.zip`
+- `backend/config.py` ← `full_integration_repo.zip`
+- `backend/main.py` ← `phase10_postgres_redis_replay_institutions_repo.zip`
+- `backend/prompts/conversation_turn_prompt.txt` ← `phase9_relationships_timeline_persistence_repo.zip`
+- `backend/prompts/decision_prompt.txt` ← `phase9_relationships_timeline_persistence_repo.zip`
+- `backend/prompts/memory_compression_prompt.txt` ← `phase5_objects_needs_hazards_repo.zip`
+- `backend/prompts/memory_recall_prompt.txt` ← `phase9_relationships_timeline_persistence_repo.zip`
+- `backend/requirements.txt` ← `phase10_postgres_redis_replay_institutions_repo.zip`
+- `backend/services/actions.py` ← `phase9_relationships_timeline_persistence_repo.zip`
+- `backend/services/addiction.py` ← `phase9_relationships_timeline_persistence_repo.zip`
+- `backend/services/attention.py` ← `phase9_relationships_timeline_persistence_repo.zip`
+- `backend/services/belief.py` ← `phase9_relationships_timeline_persistence_repo.zip`
+- `backend/services/cache.py` ← `phase10_postgres_redis_replay_institutions_repo.zip`
+- `backend/services/cognition.py` ← `phase9_relationships_timeline_persistence_repo.zip`
+- `backend/services/config.py` ← `phase10_postgres_redis_replay_institutions_repo.zip`
+- `backend/services/conversation.py` ← `phase10_postgres_redis_replay_institutions_repo.zip`
+- `backend/services/conversation_llm.py` ← `phase9_relationships_timeline_persistence_repo.zip`
+- `backend/services/db.py` ← `phase10_postgres_redis_replay_institutions_repo.zip`
+- `backend/services/deception.py` ← `phase9_relationships_timeline_persistence_repo.zip`
+- `backend/services/emergency.py` ← `phase9_relationships_timeline_persistence_repo.zip`
+- `backend/services/gossip.py` ← `phase9_relationships_timeline_persistence_repo.zip`
+- `backend/services/grid.py` ← `phase7_validation_damage_inventory_addiction_repo.zip`
+- `backend/services/hazards.py` ← `phase9_relationships_timeline_persistence_repo.zip`
+- `backend/services/homeostasis.py` ← `phase2_perception_grid_movement_repo.zip`
+- `backend/services/institutions.py` ← `phase10_postgres_redis_replay_institutions_repo.zip`
+- `backend/services/llm.py` ← `phase9_relationships_timeline_persistence_repo.zip`
+- `backend/services/los.py` ← `phase5_objects_needs_hazards_repo.zip`
+- `backend/services/memory.py` ← `phase9_relationships_timeline_persistence_repo.zip`
+- `backend/services/memory_compression.py` ← `phase9_relationships_timeline_persistence_repo.zip`
+- `backend/services/memory_recall.py` ← `phase10_postgres_redis_replay_institutions_repo.zip`
+- `backend/services/mental_states.py` ← `simulation_repo.zip`
+- `backend/services/needs_locations.py` ← `phase9_relationships_timeline_persistence_repo.zip`
+- `backend/services/object_system.py` ← `phase9_relationships_timeline_persistence_repo.zip`
+- `backend/services/operator.py` ← `phase10_postgres_redis_replay_institutions_repo.zip`
+- `backend/services/pathfinding.py` ← `phase9_relationships_timeline_persistence_repo.zip`
+- `backend/services/perception.py` ← `phase9_relationships_timeline_persistence_repo.zip`
+- `backend/services/physiology.py` ← `phase9_relationships_timeline_persistence_repo.zip`
+- `backend/services/relationship.py` ← `phase10_postgres_redis_replay_institutions_repo.zip`
+- `backend/services/simulation_tick.py` ← `full_sim_repo.zip`
+- `backend/services/state.py` ← `phase10_postgres_redis_replay_institutions_repo.zip`
+- `backend/services/suspicion.py` ← `phase9_relationships_timeline_persistence_repo.zip`
+- `backend/services/tick.py` ← `phase10_postgres_redis_replay_institutions_repo.zip`
+- `backend/services/ws.py` ← `phase10_postgres_redis_replay_institutions_repo.zip`
+- `docker-compose.yml` ← `phase10_postgres_redis_replay_institutions_repo.zip`
+- `frontend/Dockerfile` ← `phase10_postgres_redis_replay_institutions_repo.zip`
+- `frontend/index.html` ← `phase10_postgres_redis_replay_institutions_repo.zip`
+- `frontend/package.json` ← `phase10_postgres_redis_replay_institutions_repo.zip`
+- `frontend/src/App.jsx` ← `phase10_postgres_redis_replay_institutions_repo.zip`
+- `frontend/src/App.tsx` ← `full_sim_repo.zip`
+- `frontend/src/main.jsx` ← `phase10_postgres_redis_replay_institutions_repo.zip`
+- `frontend/vite.config.js` ← `phase10_postgres_redis_replay_institutions_repo.zip`
+- `prompts/decision_prompt.txt` ← `phase1_cognition_repo.zip`
+- `tests/test_pathfinding.py` ← `phase2_perception_grid_movement_repo.zip`
+
+## Overwrite history
+- `backend/main.py`: `simulation_repo.zip` -> `full_sim_repo.zip`
+- `backend/requirements.txt`: `simulation_repo.zip` -> `full_sim_repo.zip`
+- `backend/services/simulation_tick.py`: `simulation_repo.zip` -> `full_sim_repo.zip`
+- `backend/services/physiology.py`: `simulation_repo.zip` -> `full_sim_repo.zip`
+- `backend/services/homeostasis.py`: `simulation_repo.zip` -> `full_sim_repo.zip`
+- `frontend/package.json`: `simulation_repo.zip` -> `full_sim_repo.zip`
+- `frontend/src/App.tsx`: `simulation_repo.zip` -> `full_sim_repo.zip`
+- `docker-compose.yml`: `full_sim_repo.zip` -> `final_sim_repo.zip`
+- `backend/main.py`: `full_sim_repo.zip` -> `final_sim_repo.zip`
+- `backend/Dockerfile`: `full_sim_repo.zip` -> `final_sim_repo.zip`
+- `docker-compose.yml`: `final_sim_repo.zip` -> `full_integration_repo.zip`
+- `backend/main.py`: `final_sim_repo.zip` -> `full_integration_repo.zip`
+- `backend/requirements.txt`: `full_sim_repo.zip` -> `full_integration_repo.zip`
+- `backend/Dockerfile`: `final_sim_repo.zip` -> `full_integration_repo.zip`
+- `backend/services/ws.py`: `full_sim_repo.zip` -> `full_integration_repo.zip`
+- `backend/services/physiology.py`: `full_sim_repo.zip` -> `full_integration_repo.zip`
+- `backend/services/homeostasis.py`: `full_sim_repo.zip` -> `full_integration_repo.zip`
+- `backend/services/llm.py`: `full_sim_repo.zip` -> `full_integration_repo.zip`
+- `frontend/index.html`: `final_sim_repo.zip` -> `full_integration_repo.zip`
+- `docker-compose.yml`: `full_integration_repo.zip` -> `phase1_cognition_repo.zip`
+- `prompts/decision_prompt.txt`: `final_sim_repo.zip` -> `phase1_cognition_repo.zip`
+- `backend/main.py`: `full_integration_repo.zip` -> `phase1_cognition_repo.zip`
+- `backend/requirements.txt`: `full_integration_repo.zip` -> `phase1_cognition_repo.zip`
+- `backend/Dockerfile`: `full_integration_repo.zip` -> `phase1_cognition_repo.zip`
+- `backend/services/memory.py`: `full_integration_repo.zip` -> `phase1_cognition_repo.zip`
+- `backend/services/belief.py`: `full_integration_repo.zip` -> `phase1_cognition_repo.zip`
+- `backend/services/llm.py`: `full_integration_repo.zip` -> `phase1_cognition_repo.zip`
+- `backend/services/tick.py`: `full_integration_repo.zip` -> `phase1_cognition_repo.zip`
+- `README.md`: `simulation_repo.zip` -> `phase2_perception_grid_movement_repo.zip`
+- `docker-compose.yml`: `phase1_cognition_repo.zip` -> `phase2_perception_grid_movement_repo.zip`
+- `backend/requirements.txt`: `phase1_cognition_repo.zip` -> `phase2_perception_grid_movement_repo.zip`
+- `backend/Dockerfile`: `phase1_cognition_repo.zip` -> `phase2_perception_grid_movement_repo.zip`
+- `backend/main.py`: `phase1_cognition_repo.zip` -> `phase2_perception_grid_movement_repo.zip`
+- `backend/services/ws.py`: `full_integration_repo.zip` -> `phase2_perception_grid_movement_repo.zip`
+- `backend/services/state.py`: `full_integration_repo.zip` -> `phase2_perception_grid_movement_repo.zip`
+- `backend/services/perception.py`: `full_integration_repo.zip` -> `phase2_perception_grid_movement_repo.zip`
+- `backend/services/attention.py`: `phase1_cognition_repo.zip` -> `phase2_perception_grid_movement_repo.zip`
+- `backend/services/belief.py`: `phase1_cognition_repo.zip` -> `phase2_perception_grid_movement_repo.zip`
+- `backend/services/memory.py`: `phase1_cognition_repo.zip` -> `phase2_perception_grid_movement_repo.zip`
+- `backend/services/physiology.py`: `full_integration_repo.zip` -> `phase2_perception_grid_movement_repo.zip`
+- `backend/services/homeostasis.py`: `full_integration_repo.zip` -> `phase2_perception_grid_movement_repo.zip`
+- `backend/services/cognition.py`: `phase1_cognition_repo.zip` -> `phase2_perception_grid_movement_repo.zip`
+- `backend/services/llm.py`: `phase1_cognition_repo.zip` -> `phase2_perception_grid_movement_repo.zip`
+- `backend/services/actions.py`: `full_integration_repo.zip` -> `phase2_perception_grid_movement_repo.zip`
+- `backend/services/tick.py`: `phase1_cognition_repo.zip` -> `phase2_perception_grid_movement_repo.zip`
+- `frontend/package.json`: `full_sim_repo.zip` -> `phase2_perception_grid_movement_repo.zip`
+- `frontend/index.html`: `full_integration_repo.zip` -> `phase2_perception_grid_movement_repo.zip`
+- `README.md`: `phase2_perception_grid_movement_repo.zip` -> `phase5_objects_needs_hazards_repo.zip`
+- `docker-compose.yml`: `phase2_perception_grid_movement_repo.zip` -> `phase5_objects_needs_hazards_repo.zip`
+- `backend/requirements.txt`: `phase2_perception_grid_movement_repo.zip` -> `phase5_objects_needs_hazards_repo.zip`
+- `backend/Dockerfile`: `phase2_perception_grid_movement_repo.zip` -> `phase5_objects_needs_hazards_repo.zip`
+- `backend/main.py`: `phase2_perception_grid_movement_repo.zip` -> `phase5_objects_needs_hazards_repo.zip`
+- `backend/prompts/decision_prompt.txt`: `phase2_perception_grid_movement_repo.zip` -> `phase5_objects_needs_hazards_repo.zip`
+- `backend/services/ws.py`: `phase2_perception_grid_movement_repo.zip` -> `phase5_objects_needs_hazards_repo.zip`
+- `backend/services/state.py`: `phase2_perception_grid_movement_repo.zip` -> `phase5_objects_needs_hazards_repo.zip`
+- `backend/services/grid.py`: `phase2_perception_grid_movement_repo.zip` -> `phase5_objects_needs_hazards_repo.zip`
+- `backend/services/pathfinding.py`: `phase2_perception_grid_movement_repo.zip` -> `phase5_objects_needs_hazards_repo.zip`
+- `backend/services/los.py`: `phase2_perception_grid_movement_repo.zip` -> `phase5_objects_needs_hazards_repo.zip`
+- `backend/services/perception.py`: `phase2_perception_grid_movement_repo.zip` -> `phase5_objects_needs_hazards_repo.zip`
+- `backend/services/attention.py`: `phase2_perception_grid_movement_repo.zip` -> `phase5_objects_needs_hazards_repo.zip`
+- `backend/services/belief.py`: `phase2_perception_grid_movement_repo.zip` -> `phase5_objects_needs_hazards_repo.zip`
+- `backend/services/memory.py`: `phase2_perception_grid_movement_repo.zip` -> `phase5_objects_needs_hazards_repo.zip`
+- `backend/services/physiology.py`: `phase2_perception_grid_movement_repo.zip` -> `phase5_objects_needs_hazards_repo.zip`
+- `backend/services/cognition.py`: `phase2_perception_grid_movement_repo.zip` -> `phase5_objects_needs_hazards_repo.zip`
+- `backend/services/llm.py`: `phase2_perception_grid_movement_repo.zip` -> `phase5_objects_needs_hazards_repo.zip`
+- `backend/services/actions.py`: `phase2_perception_grid_movement_repo.zip` -> `phase5_objects_needs_hazards_repo.zip`
+- `backend/services/tick.py`: `phase2_perception_grid_movement_repo.zip` -> `phase5_objects_needs_hazards_repo.zip`
+- `frontend/package.json`: `phase2_perception_grid_movement_repo.zip` -> `phase5_objects_needs_hazards_repo.zip`
+- `frontend/Dockerfile`: `phase2_perception_grid_movement_repo.zip` -> `phase5_objects_needs_hazards_repo.zip`
+- `frontend/vite.config.js`: `phase2_perception_grid_movement_repo.zip` -> `phase5_objects_needs_hazards_repo.zip`
+- `frontend/index.html`: `phase2_perception_grid_movement_repo.zip` -> `phase5_objects_needs_hazards_repo.zip`
+- `frontend/src/main.jsx`: `phase2_perception_grid_movement_repo.zip` -> `phase5_objects_needs_hazards_repo.zip`
+- `frontend/src/App.jsx`: `phase2_perception_grid_movement_repo.zip` -> `phase5_objects_needs_hazards_repo.zip`
+- `README.md`: `phase5_objects_needs_hazards_repo.zip` -> `phase7_validation_damage_inventory_addiction_repo.zip`
+- `.env.example`: `phase5_objects_needs_hazards_repo.zip` -> `phase7_validation_damage_inventory_addiction_repo.zip`
+- `docker-compose.yml`: `phase5_objects_needs_hazards_repo.zip` -> `phase7_validation_damage_inventory_addiction_repo.zip`
+- `backend/requirements.txt`: `phase5_objects_needs_hazards_repo.zip` -> `phase7_validation_damage_inventory_addiction_repo.zip`
+- `backend/Dockerfile`: `phase5_objects_needs_hazards_repo.zip` -> `phase7_validation_damage_inventory_addiction_repo.zip`
+- `backend/main.py`: `phase5_objects_needs_hazards_repo.zip` -> `phase7_validation_damage_inventory_addiction_repo.zip`
+- `backend/prompts/decision_prompt.txt`: `phase5_objects_needs_hazards_repo.zip` -> `phase7_validation_damage_inventory_addiction_repo.zip`
+- `backend/services/ws.py`: `phase5_objects_needs_hazards_repo.zip` -> `phase7_validation_damage_inventory_addiction_repo.zip`
+- `backend/services/state.py`: `phase5_objects_needs_hazards_repo.zip` -> `phase7_validation_damage_inventory_addiction_repo.zip`
+- `backend/services/grid.py`: `phase5_objects_needs_hazards_repo.zip` -> `phase7_validation_damage_inventory_addiction_repo.zip`
+- `backend/services/pathfinding.py`: `phase5_objects_needs_hazards_repo.zip` -> `phase7_validation_damage_inventory_addiction_repo.zip`
+- `backend/services/perception.py`: `phase5_objects_needs_hazards_repo.zip` -> `phase7_validation_damage_inventory_addiction_repo.zip`
+- `backend/services/attention.py`: `phase5_objects_needs_hazards_repo.zip` -> `phase7_validation_damage_inventory_addiction_repo.zip`
+- `backend/services/belief.py`: `phase5_objects_needs_hazards_repo.zip` -> `phase7_validation_damage_inventory_addiction_repo.zip`
+- `backend/services/memory.py`: `phase5_objects_needs_hazards_repo.zip` -> `phase7_validation_damage_inventory_addiction_repo.zip`
+- `backend/services/memory_compression.py`: `phase5_objects_needs_hazards_repo.zip` -> `phase7_validation_damage_inventory_addiction_repo.zip`
+- `backend/services/physiology.py`: `phase5_objects_needs_hazards_repo.zip` -> `phase7_validation_damage_inventory_addiction_repo.zip`
+- `backend/services/object_system.py`: `phase5_objects_needs_hazards_repo.zip` -> `phase7_validation_damage_inventory_addiction_repo.zip`
+- `backend/services/needs_locations.py`: `phase5_objects_needs_hazards_repo.zip` -> `phase7_validation_damage_inventory_addiction_repo.zip`
+- `backend/services/hazards.py`: `phase5_objects_needs_hazards_repo.zip` -> `phase7_validation_damage_inventory_addiction_repo.zip`
+- `backend/services/addiction.py`: `simulation_repo.zip` -> `phase7_validation_damage_inventory_addiction_repo.zip`
+- `backend/services/emergency.py`: `phase5_objects_needs_hazards_repo.zip` -> `phase7_validation_damage_inventory_addiction_repo.zip`
+- `backend/services/cognition.py`: `phase5_objects_needs_hazards_repo.zip` -> `phase7_validation_damage_inventory_addiction_repo.zip`
+- `backend/services/deception.py`: `phase5_objects_needs_hazards_repo.zip` -> `phase7_validation_damage_inventory_addiction_repo.zip`
+- `backend/services/suspicion.py`: `phase5_objects_needs_hazards_repo.zip` -> `phase7_validation_damage_inventory_addiction_repo.zip`
+- `backend/services/gossip.py`: `phase5_objects_needs_hazards_repo.zip` -> `phase7_validation_damage_inventory_addiction_repo.zip`
+- `backend/services/conversation.py`: `phase5_objects_needs_hazards_repo.zip` -> `phase7_validation_damage_inventory_addiction_repo.zip`
+- `backend/services/operator.py`: `phase5_objects_needs_hazards_repo.zip` -> `phase7_validation_damage_inventory_addiction_repo.zip`
+- `backend/services/llm.py`: `phase5_objects_needs_hazards_repo.zip` -> `phase7_validation_damage_inventory_addiction_repo.zip`
+- `backend/services/actions.py`: `phase5_objects_needs_hazards_repo.zip` -> `phase7_validation_damage_inventory_addiction_repo.zip`
+- `backend/services/tick.py`: `phase5_objects_needs_hazards_repo.zip` -> `phase7_validation_damage_inventory_addiction_repo.zip`
+- `frontend/package.json`: `phase5_objects_needs_hazards_repo.zip` -> `phase7_validation_damage_inventory_addiction_repo.zip`
+- `frontend/Dockerfile`: `phase5_objects_needs_hazards_repo.zip` -> `phase7_validation_damage_inventory_addiction_repo.zip`
+- `frontend/vite.config.js`: `phase5_objects_needs_hazards_repo.zip` -> `phase7_validation_damage_inventory_addiction_repo.zip`
+- `frontend/index.html`: `phase5_objects_needs_hazards_repo.zip` -> `phase7_validation_damage_inventory_addiction_repo.zip`
+- `frontend/src/main.jsx`: `phase5_objects_needs_hazards_repo.zip` -> `phase7_validation_damage_inventory_addiction_repo.zip`
+- `frontend/src/App.jsx`: `phase5_objects_needs_hazards_repo.zip` -> `phase7_validation_damage_inventory_addiction_repo.zip`
+- `README.md`: `phase7_validation_damage_inventory_addiction_repo.zip` -> `phase8_conversation_recall_operator_repo.zip`
+- `.env.example`: `phase7_validation_damage_inventory_addiction_repo.zip` -> `phase8_conversation_recall_operator_repo.zip`
+- `docker-compose.yml`: `phase7_validation_damage_inventory_addiction_repo.zip` -> `phase8_conversation_recall_operator_repo.zip`
+- `backend/requirements.txt`: `phase7_validation_damage_inventory_addiction_repo.zip` -> `phase8_conversation_recall_operator_repo.zip`
+- `backend/Dockerfile`: `phase7_validation_damage_inventory_addiction_repo.zip` -> `phase8_conversation_recall_operator_repo.zip`
+- `backend/main.py`: `phase7_validation_damage_inventory_addiction_repo.zip` -> `phase8_conversation_recall_operator_repo.zip`
+- `backend/prompts/decision_prompt.txt`: `phase7_validation_damage_inventory_addiction_repo.zip` -> `phase8_conversation_recall_operator_repo.zip`
+- `backend/prompts/memory_recall_prompt.txt`: `phase5_objects_needs_hazards_repo.zip` -> `phase8_conversation_recall_operator_repo.zip`
+- `backend/services/ws.py`: `phase7_validation_damage_inventory_addiction_repo.zip` -> `phase8_conversation_recall_operator_repo.zip`
+- `backend/services/state.py`: `phase7_validation_damage_inventory_addiction_repo.zip` -> `phase8_conversation_recall_operator_repo.zip`
+- `backend/services/pathfinding.py`: `phase7_validation_damage_inventory_addiction_repo.zip` -> `phase8_conversation_recall_operator_repo.zip`
+- `backend/services/perception.py`: `phase7_validation_damage_inventory_addiction_repo.zip` -> `phase8_conversation_recall_operator_repo.zip`
+- `backend/services/attention.py`: `phase7_validation_damage_inventory_addiction_repo.zip` -> `phase8_conversation_recall_operator_repo.zip`
+- `backend/services/belief.py`: `phase7_validation_damage_inventory_addiction_repo.zip` -> `phase8_conversation_recall_operator_repo.zip`
+- `backend/services/memory.py`: `phase7_validation_damage_inventory_addiction_repo.zip` -> `phase8_conversation_recall_operator_repo.zip`
+- `backend/services/memory_compression.py`: `phase7_validation_damage_inventory_addiction_repo.zip` -> `phase8_conversation_recall_operator_repo.zip`
+- `backend/services/memory_recall.py`: `phase5_objects_needs_hazards_repo.zip` -> `phase8_conversation_recall_operator_repo.zip`
+- `backend/services/physiology.py`: `phase7_validation_damage_inventory_addiction_repo.zip` -> `phase8_conversation_recall_operator_repo.zip`
+- `backend/services/object_system.py`: `phase7_validation_damage_inventory_addiction_repo.zip` -> `phase8_conversation_recall_operator_repo.zip`
+- `backend/services/needs_locations.py`: `phase7_validation_damage_inventory_addiction_repo.zip` -> `phase8_conversation_recall_operator_repo.zip`
+- `backend/services/hazards.py`: `phase7_validation_damage_inventory_addiction_repo.zip` -> `phase8_conversation_recall_operator_repo.zip`
+- `backend/services/addiction.py`: `phase7_validation_damage_inventory_addiction_repo.zip` -> `phase8_conversation_recall_operator_repo.zip`
+- `backend/services/emergency.py`: `phase7_validation_damage_inventory_addiction_repo.zip` -> `phase8_conversation_recall_operator_repo.zip`
+- `backend/services/cognition.py`: `phase7_validation_damage_inventory_addiction_repo.zip` -> `phase8_conversation_recall_operator_repo.zip`
+- `backend/services/conversation.py`: `phase7_validation_damage_inventory_addiction_repo.zip` -> `phase8_conversation_recall_operator_repo.zip`
+- `backend/services/operator.py`: `phase7_validation_damage_inventory_addiction_repo.zip` -> `phase8_conversation_recall_operator_repo.zip`
+- `backend/services/llm.py`: `phase7_validation_damage_inventory_addiction_repo.zip` -> `phase8_conversation_recall_operator_repo.zip`
+- `backend/services/actions.py`: `phase7_validation_damage_inventory_addiction_repo.zip` -> `phase8_conversation_recall_operator_repo.zip`
+- `backend/services/tick.py`: `phase7_validation_damage_inventory_addiction_repo.zip` -> `phase8_conversation_recall_operator_repo.zip`
+- `frontend/package.json`: `phase7_validation_damage_inventory_addiction_repo.zip` -> `phase8_conversation_recall_operator_repo.zip`
+- `frontend/Dockerfile`: `phase7_validation_damage_inventory_addiction_repo.zip` -> `phase8_conversation_recall_operator_repo.zip`
+- `frontend/vite.config.js`: `phase7_validation_damage_inventory_addiction_repo.zip` -> `phase8_conversation_recall_operator_repo.zip`
+- `frontend/index.html`: `phase7_validation_damage_inventory_addiction_repo.zip` -> `phase8_conversation_recall_operator_repo.zip`
+- `frontend/src/main.jsx`: `phase7_validation_damage_inventory_addiction_repo.zip` -> `phase8_conversation_recall_operator_repo.zip`
+- `frontend/src/App.jsx`: `phase7_validation_damage_inventory_addiction_repo.zip` -> `phase8_conversation_recall_operator_repo.zip`
+- `README.md`: `phase8_conversation_recall_operator_repo.zip` -> `phase9_relationships_timeline_persistence_repo.zip`
+- `.env.example`: `phase8_conversation_recall_operator_repo.zip` -> `phase9_relationships_timeline_persistence_repo.zip`
+- `docker-compose.yml`: `phase8_conversation_recall_operator_repo.zip` -> `phase9_relationships_timeline_persistence_repo.zip`
+- `backend/requirements.txt`: `phase8_conversation_recall_operator_repo.zip` -> `phase9_relationships_timeline_persistence_repo.zip`
+- `backend/Dockerfile`: `phase8_conversation_recall_operator_repo.zip` -> `phase9_relationships_timeline_persistence_repo.zip`
+- `backend/prompts/decision_prompt.txt`: `phase8_conversation_recall_operator_repo.zip` -> `phase9_relationships_timeline_persistence_repo.zip`
+- `backend/prompts/conversation_turn_prompt.txt`: `phase8_conversation_recall_operator_repo.zip` -> `phase9_relationships_timeline_persistence_repo.zip`
+- `backend/prompts/memory_recall_prompt.txt`: `phase8_conversation_recall_operator_repo.zip` -> `phase9_relationships_timeline_persistence_repo.zip`
+- `backend/services/ws.py`: `phase8_conversation_recall_operator_repo.zip` -> `phase9_relationships_timeline_persistence_repo.zip`
+- `backend/services/state.py`: `phase8_conversation_recall_operator_repo.zip` -> `phase9_relationships_timeline_persistence_repo.zip`
+- `backend/services/pathfinding.py`: `phase8_conversation_recall_operator_repo.zip` -> `phase9_relationships_timeline_persistence_repo.zip`
+- `backend/services/perception.py`: `phase8_conversation_recall_operator_repo.zip` -> `phase9_relationships_timeline_persistence_repo.zip`
+- `backend/services/attention.py`: `phase8_conversation_recall_operator_repo.zip` -> `phase9_relationships_timeline_persistence_repo.zip`
+- `backend/services/belief.py`: `phase8_conversation_recall_operator_repo.zip` -> `phase9_relationships_timeline_persistence_repo.zip`
+- `backend/services/memory.py`: `phase8_conversation_recall_operator_repo.zip` -> `phase9_relationships_timeline_persistence_repo.zip`
+- `backend/services/memory_compression.py`: `phase8_conversation_recall_operator_repo.zip` -> `phase9_relationships_timeline_persistence_repo.zip`
+- `backend/services/memory_recall.py`: `phase8_conversation_recall_operator_repo.zip` -> `phase9_relationships_timeline_persistence_repo.zip`
+- `backend/services/physiology.py`: `phase8_conversation_recall_operator_repo.zip` -> `phase9_relationships_timeline_persistence_repo.zip`
+- `backend/services/object_system.py`: `phase8_conversation_recall_operator_repo.zip` -> `phase9_relationships_timeline_persistence_repo.zip`
+- `backend/services/needs_locations.py`: `phase8_conversation_recall_operator_repo.zip` -> `phase9_relationships_timeline_persistence_repo.zip`
+- `backend/services/hazards.py`: `phase8_conversation_recall_operator_repo.zip` -> `phase9_relationships_timeline_persistence_repo.zip`
+- `backend/services/addiction.py`: `phase8_conversation_recall_operator_repo.zip` -> `phase9_relationships_timeline_persistence_repo.zip`
+- `backend/services/emergency.py`: `phase8_conversation_recall_operator_repo.zip` -> `phase9_relationships_timeline_persistence_repo.zip`
+- `backend/services/cognition.py`: `phase8_conversation_recall_operator_repo.zip` -> `phase9_relationships_timeline_persistence_repo.zip`
+- `backend/services/conversation_llm.py`: `phase8_conversation_recall_operator_repo.zip` -> `phase9_relationships_timeline_persistence_repo.zip`
+- `backend/services/deception.py`: `phase7_validation_damage_inventory_addiction_repo.zip` -> `phase9_relationships_timeline_persistence_repo.zip`
+- `backend/services/suspicion.py`: `phase7_validation_damage_inventory_addiction_repo.zip` -> `phase9_relationships_timeline_persistence_repo.zip`
+- `backend/services/gossip.py`: `phase7_validation_damage_inventory_addiction_repo.zip` -> `phase9_relationships_timeline_persistence_repo.zip`
+- `backend/services/conversation.py`: `phase8_conversation_recall_operator_repo.zip` -> `phase9_relationships_timeline_persistence_repo.zip`
+- `backend/services/operator.py`: `phase8_conversation_recall_operator_repo.zip` -> `phase9_relationships_timeline_persistence_repo.zip`
+- `backend/services/llm.py`: `phase8_conversation_recall_operator_repo.zip` -> `phase9_relationships_timeline_persistence_repo.zip`
+- `backend/services/actions.py`: `phase8_conversation_recall_operator_repo.zip` -> `phase9_relationships_timeline_persistence_repo.zip`
+- `backend/services/tick.py`: `phase8_conversation_recall_operator_repo.zip` -> `phase9_relationships_timeline_persistence_repo.zip`
+- `frontend/package.json`: `phase8_conversation_recall_operator_repo.zip` -> `phase9_relationships_timeline_persistence_repo.zip`
+- `frontend/Dockerfile`: `phase8_conversation_recall_operator_repo.zip` -> `phase9_relationships_timeline_persistence_repo.zip`
+- `frontend/vite.config.js`: `phase8_conversation_recall_operator_repo.zip` -> `phase9_relationships_timeline_persistence_repo.zip`
+- `frontend/index.html`: `phase8_conversation_recall_operator_repo.zip` -> `phase9_relationships_timeline_persistence_repo.zip`
+- `frontend/src/main.jsx`: `phase8_conversation_recall_operator_repo.zip` -> `phase9_relationships_timeline_persistence_repo.zip`
+- `frontend/src/App.jsx`: `phase8_conversation_recall_operator_repo.zip` -> `phase9_relationships_timeline_persistence_repo.zip`
+- `README.md`: `phase9_relationships_timeline_persistence_repo.zip` -> `phase10_postgres_redis_replay_institutions_repo.zip`
+- `.env.example`: `phase9_relationships_timeline_persistence_repo.zip` -> `phase10_postgres_redis_replay_institutions_repo.zip`
+- `docker-compose.yml`: `phase9_relationships_timeline_persistence_repo.zip` -> `phase10_postgres_redis_replay_institutions_repo.zip`
+- `backend/requirements.txt`: `phase9_relationships_timeline_persistence_repo.zip` -> `phase10_postgres_redis_replay_institutions_repo.zip`
+- `backend/Dockerfile`: `phase9_relationships_timeline_persistence_repo.zip` -> `phase10_postgres_redis_replay_institutions_repo.zip`
+- `backend/main.py`: `phase8_conversation_recall_operator_repo.zip` -> `phase10_postgres_redis_replay_institutions_repo.zip`
+- `backend/services/ws.py`: `phase9_relationships_timeline_persistence_repo.zip` -> `phase10_postgres_redis_replay_institutions_repo.zip`
+- `backend/services/db.py`: `phase9_relationships_timeline_persistence_repo.zip` -> `phase10_postgres_redis_replay_institutions_repo.zip`
+- `backend/services/state.py`: `phase9_relationships_timeline_persistence_repo.zip` -> `phase10_postgres_redis_replay_institutions_repo.zip`
+- `backend/services/relationship.py`: `phase9_relationships_timeline_persistence_repo.zip` -> `phase10_postgres_redis_replay_institutions_repo.zip`
+- `backend/services/conversation.py`: `phase9_relationships_timeline_persistence_repo.zip` -> `phase10_postgres_redis_replay_institutions_repo.zip`
+- `backend/services/operator.py`: `phase9_relationships_timeline_persistence_repo.zip` -> `phase10_postgres_redis_replay_institutions_repo.zip`
+- `backend/services/memory_recall.py`: `phase9_relationships_timeline_persistence_repo.zip` -> `phase10_postgres_redis_replay_institutions_repo.zip`
+- `backend/services/tick.py`: `phase9_relationships_timeline_persistence_repo.zip` -> `phase10_postgres_redis_replay_institutions_repo.zip`
+- `frontend/package.json`: `phase9_relationships_timeline_persistence_repo.zip` -> `phase10_postgres_redis_replay_institutions_repo.zip`
+- `frontend/Dockerfile`: `phase9_relationships_timeline_persistence_repo.zip` -> `phase10_postgres_redis_replay_institutions_repo.zip`
+- `frontend/vite.config.js`: `phase9_relationships_timeline_persistence_repo.zip` -> `phase10_postgres_redis_replay_institutions_repo.zip`
+- `frontend/index.html`: `phase9_relationships_timeline_persistence_repo.zip` -> `phase10_postgres_redis_replay_institutions_repo.zip`
+- `frontend/src/main.jsx`: `phase9_relationships_timeline_persistence_repo.zip` -> `phase10_postgres_redis_replay_institutions_repo.zip`
+- `frontend/src/App.jsx`: `phase9_relationships_timeline_persistence_repo.zip` -> `phase10_postgres_redis_replay_institutions_repo.zip`

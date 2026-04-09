@@ -1,34 +1,26 @@
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, Query
 from pydantic import BaseModel
 import asyncio
 from services.tick import simulation_loop
 from services.ws import manager
 from services.state import get_world_snapshot
-from services.operator import inject_news, inject_hazard, get_character, patch_character
-from services.memory_recall import recall_for_question
+from services.operator import inject_news, get_character, patch_character
+from services.db import init_db, list_timeline_events, replay_events, replay_window
 
-app = FastAPI(title="Phase 8")
+app = FastAPI(title="Phase 10")
 
 class NewsPayload(BaseModel):
     content: str
 
-class HazardPayload(BaseModel):
-    hazard_type: str
-    location: dict
-    intensity: float = 1.0
-
 class CharacterPatch(BaseModel):
     health: float | None = None
-    intoxication: float | None = None
-    is_unconscious: bool | None = None
-    thoughts: str | None = None
     needs: dict | None = None
-
-class AskPayload(BaseModel):
-    question: str
+    thoughts: str | None = None
+    institution_role: str | None = None
 
 @app.on_event("startup")
 async def startup():
+    init_db()
     asyncio.create_task(simulation_loop())
 
 @app.get("/")
@@ -39,14 +31,21 @@ def root():
 def world():
     return get_world_snapshot()
 
+@app.get("/timeline")
+def timeline(limit: int = Query(default=200, ge=1, le=5000)):
+    return {"events": list_timeline_events(limit)}
+
+@app.get("/timeline/replay")
+def replay(start_tick: int = 1, end_tick: int = 100):
+    return {"events": replay_events(start_tick, end_tick)}
+
+@app.get("/timeline/replay/window")
+def replay_scrub(cursor_tick: int = 1, radius: int = 15):
+    return {"events": replay_window(cursor_tick, radius)}
+
 @app.post("/operator/news")
 def post_news(payload: NewsPayload):
     inject_news(payload.content)
-    return {"ok": True}
-
-@app.post("/operator/hazard")
-def post_hazard(payload: HazardPayload):
-    inject_hazard(payload.hazard_type, payload.location, payload.intensity)
     return {"ok": True}
 
 @app.get("/operator/character/{char_id}")
@@ -62,13 +61,6 @@ def patch_character_endpoint(char_id: str, payload: CharacterPatch):
     if not c:
         raise HTTPException(status_code=404, detail="Character not found")
     return c
-
-@app.post("/operator/ask/{char_id}")
-def ask_character_endpoint(char_id: str, payload: AskPayload):
-    c = get_character(char_id)
-    if not c:
-        raise HTTPException(status_code=404, detail="Character not found")
-    return recall_for_question(c, payload.question)
 
 @app.websocket("/ws")
 async def ws_endpoint(ws: WebSocket):

@@ -1,16 +1,7 @@
 You are the cognitive engine of a simulated human character.
-
 Return ONLY valid JSON:
 {
-  "plan": [
-    {
-      "action": "move|talk|wait|investigate|continue_conversation|pickup|consume|sleep|use_toilet|evacuate|warn|rescue",
-      "target": {},
-      "speech": "optional string",
-      "prefer_effect": "optional string",
-      "target_effect": "optional string"
-    }
-  ],
-  "thoughts": "brief internal thought",
-  "emotion_update": {"stress": 0.0}
+  "plan": [{"action":"move|talk|wait|pickup|consume|sleep|use_toilet|evacuate|warn","target":{},"speech":"optional","prefer_effect":"optional","target_effect":"optional"}],
+  "thoughts":"brief internal thought",
+  "emotion_update":{"stress":0.0}
 }

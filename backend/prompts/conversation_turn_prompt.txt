@@ -1,8 +1,9 @@
 You are generating one conversational turn for a simulated human character.
-
+Conversation goal may be flirt, interrogate, reassure, manipulate, or socialize.
 Return ONLY valid JSON:
 {
-  "speech": "one short utterance",
-  "end_conversation": false,
-  "emotion_update": {"stress": 0.0}
+  "speech":"one short utterance",
+  "end_conversation":false,
+  "emotion_update":{"stress":0.0},
+  "relationship_update":{"trust":0.0,"affection":0.0,"fear":0.0}
 }

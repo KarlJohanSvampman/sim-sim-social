@@ -1,4 +1,9 @@
+from services.relationship import get_edge
 def build_context(c, focused, world):
+    rels={}
+    for other_id in world["characters"]:
+        if other_id != c["id"]:
+            rels[other_id]=get_edge(world,c["id"],other_id)
     return {
         "identity":{"id":c["id"],"name":c["name"]},
         "needs":c["needs"],
@@ -13,11 +18,10 @@ def build_context(c, focused, world):
         "hazards":world.get("hazards", [])[-8:],
         "inventory":c.get("inventory", []),
         "health":c.get("health"),
-        "smoke_inhalation":c.get("smoke_inhalation"),
-        "is_unconscious":c.get("is_unconscious"),
         "intoxication":c.get("intoxication"),
         "addiction":c.get("addiction"),
         "cravings":c.get("cravings"),
         "withdrawal":c.get("withdrawal"),
+        "relationships":rels,
         "objects":list(world.get("objects", {}).values())
     }
