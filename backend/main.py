@@ -1,13 +1,15 @@
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, Query
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 import asyncio
 from services.tick import simulation_loop
 from services.ws import manager
 from services.state import get_world_snapshot
-from services.operator import inject_news, get_character, patch_character
+from services.operator import inject_news, get_character, patch_character, create_character
+from services.profile_schema import get_character_profile_schema
+from services.memory_recall import recall_for_question
 from services.db import init_db, list_timeline_events, replay_events, replay_window
 
-app = FastAPI(title="Phase 10")
+app = FastAPI(title="Phase 10+")
 
 class NewsPayload(BaseModel):
     content: str
@@ -17,6 +19,15 @@ class CharacterPatch(BaseModel):
     needs: dict | None = None
     thoughts: str | None = None
     institution_role: str | None = None
+    profile: dict | None = None
+
+class CharacterCreatePayload(BaseModel):
+    char_id: str
+    position: dict = Field(default_factory=lambda: {"x": 1, "y": 1, "z": 0})
+    profile: dict
+
+class AskPayload(BaseModel):
+    question: str
 
 @app.on_event("startup")
 async def startup():
@@ -25,7 +36,7 @@ async def startup():
 
 @app.get("/")
 def root():
-    return {"status": "running", "world": get_world_snapshot()}
+    return {"status":"running","world":get_world_snapshot()}
 
 @app.get("/world")
 def world():
@@ -42,6 +53,10 @@ def replay(start_tick: int = 1, end_tick: int = 100):
 @app.get("/timeline/replay/window")
 def replay_scrub(cursor_tick: int = 1, radius: int = 15):
     return {"events": replay_window(cursor_tick, radius)}
+
+@app.get("/operator/schema/character-profile")
+def character_profile_schema():
+    return get_character_profile_schema()
 
 @app.post("/operator/news")
 def post_news(payload: NewsPayload):
@@ -61,6 +76,17 @@ def patch_character_endpoint(char_id: str, payload: CharacterPatch):
     if not c:
         raise HTTPException(status_code=404, detail="Character not found")
     return c
+
+@app.post("/operator/character")
+def create_character_endpoint(payload: CharacterCreatePayload):
+    return create_character(payload.char_id, payload.profile, payload.position)
+
+@app.post("/operator/ask/{char_id}")
+def ask_character_endpoint(char_id: str, payload: AskPayload):
+    c = get_character(char_id)
+    if not c:
+        raise HTTPException(status_code=404, detail="Character not found")
+    return recall_for_question(c, payload.question)
 
 @app.websocket("/ws")
 async def ws_endpoint(ws: WebSocket):
