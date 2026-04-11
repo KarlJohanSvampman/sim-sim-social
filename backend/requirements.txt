@@ -1,5 +1,5 @@
 fastapi
-uvicorn
+uvicorn[standard]
 pydantic
 openai>=1.40.0
 psycopg[binary]>=3.2

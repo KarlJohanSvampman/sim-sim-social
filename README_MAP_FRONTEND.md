@@ -1,13 +1,11 @@
-Frontend default page is now the map view.
+Frontend default page is now the map view, with an actual three.js tile grid.
 
-Added:
-- top menu bar with links to:
-  - Map
-  - Character Creator
-  - Debug
-  - Settings
-- selectable grid tiles with left click
-- deselect by right click anywhere
-- selected tile details overlay in top right
+Updated:
+- actual visible 3D tile boxes for the map grid
+- selected tile highlight
+- tile details overlay in top right
+- right-click anywhere to deselect
 - right mouse drag pans the map
-- right-side vertical map toolbar with zoom in / zoom out
+- right-side zoom toolbar
+- Character Creator menu item now opens the full creator UI, not a placeholder
+- initial /world fetch added so the map renders even before websocket updates arrive
