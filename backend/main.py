@@ -3,18 +3,22 @@ import asyncio
 from routes.world import router as world_router
 from routes.objects import router as object_router
 from routes.editor import router as editor_router
+from routes.tagged_profiles import router as tagged_profiles_router
 from services.ws import manager
 from services.state import get_world_snapshot
 from services.live_sim import live_sim_loop
+from services.tagged_sim_loop import tagged_sim_loop
 
 app = FastAPI()
 app.include_router(world_router)
 app.include_router(object_router)
 app.include_router(editor_router)
+app.include_router(tagged_profiles_router)
 
 @app.on_event("startup")
 async def startup():
     asyncio.create_task(live_sim_loop())
+    asyncio.create_task(tagged_sim_loop())
 
 @app.websocket("/ws")
 async def ws_endpoint(ws: WebSocket):

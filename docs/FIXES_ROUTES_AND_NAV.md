@@ -1,0 +1,11 @@
+This archive fixes:
+- missing backend route modules:
+  - backend/routes/world.py
+  - backend/routes/objects.py
+  - backend/routes/__init__.py
+  - backend/services/__init__.py
+- safer frontend navigation:
+  - page-level error boundary
+  - guarded fetch calls
+  - non-crashing tab switching
+  - clearer load status on each tab

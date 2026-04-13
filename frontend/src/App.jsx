@@ -7,6 +7,37 @@ import ObjectManager from "./pages/ObjectManager";
 import ItemManager from "./pages/ItemManager";
 import TileTypeManager from "./pages/TileTypeManager";
 import DebugPage from "./pages/DebugPage";
+import TaggedProfileEditor from "./pages/TaggedProfileEditor";
+
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, message: "" };
+  }
+  static getDerivedStateFromError(error) {
+    return { hasError: true, message: String(error) };
+  }
+  componentDidCatch(error, info) {
+    console.error("Page crash:", error, info);
+  }
+  componentDidUpdate(prevProps) {
+    if (prevProps.resetKey !== this.props.resetKey && this.state.hasError) {
+      this.setState({ hasError: false, message: "" });
+    }
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{padding:16, color:"#fff", background:"#111", minHeight:"calc(100vh - 56px)"}}>
+          <h2>Page error</h2>
+          <div style={{marginBottom:12}}>That tab crashed, but the app is still running.</div>
+          <pre style={{whiteSpace:"pre-wrap"}}>{this.state.message}</pre>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 function Tile({ tile, selected, onSelect }) {
   const color = tile.tile_type === "wall" ? "#4b5563" : selected ? "#f59e0b" : "#9ca3af";
@@ -38,7 +69,7 @@ function Character({ c }) {
       <Html position={[0, 1.0, 0]} center>
         <div style={{ background: "#fff", padding: "4px 6px", borderRadius: 6, border: "1px solid #999", fontSize: 12, maxWidth: 220 }}>
           <strong>{c.name}</strong><br />
-          <span>💭 {c.thoughts}</span><br />
+          <span>💭 {c.thoughts || "..."}</span><br />
           <small>{app.age ?? "?"} · {app.sex || "unknown"} · {app.body_type || "?"}</small>
         </div>
       </Html>
@@ -73,13 +104,40 @@ function TileOverlay({ tile }) {
 function MapPage() {
   const [world, setWorld] = useState(null);
   const [selectedTile, setSelectedTile] = useState(null);
+  const [status, setStatus] = useState("Loading map…");
   const controlsRef = useRef(null);
 
   useEffect(() => {
-    fetch("http://localhost:8000/world").then(r => r.json()).then(setWorld).catch(() => {});
-    const ws = new WebSocket("ws://localhost:8000/ws");
-    ws.onmessage = (ev) => setWorld(JSON.parse(ev.data));
-    return () => ws.close();
+    let ws;
+    fetch("http://localhost:8000/world")
+      .then((r) => {
+        if (!r.ok) throw new Error(`GET /world failed: ${r.status}`);
+        return r.json();
+      })
+      .then((data) => {
+        setWorld(data);
+        setStatus("Connected");
+      })
+      .catch((err) => {
+        console.error(err);
+        setStatus("World fetch failed");
+      });
+
+    try {
+      ws = new WebSocket("ws://localhost:8000/ws");
+      ws.onmessage = (ev) => {
+        try {
+          setWorld(JSON.parse(ev.data));
+          setStatus("Live");
+        } catch (e) {
+          console.error(e);
+        }
+      };
+      ws.onerror = () => setStatus("WebSocket error");
+    } catch (e) {
+      console.error(e);
+    }
+    return () => ws && ws.close();
   }, []);
 
   useEffect(() => {
@@ -97,12 +155,14 @@ function MapPage() {
     controlsRef.current.object.position.z = Math.max(6, controlsRef.current.object.position.z - 2);
     controlsRef.current.update();
   };
+
   const zoomOut = () => {
     if (!controlsRef.current) return;
     controlsRef.current.object.position.y += 2;
     controlsRef.current.object.position.z += 2;
     controlsRef.current.update();
   };
+
   const rotateAround = (dir) => {
     if (!controlsRef.current) return;
     const camera = controlsRef.current.object;
@@ -117,7 +177,9 @@ function MapPage() {
     controlsRef.current.update();
   };
 
-  if (!world) return <div style={{padding:20, color:"#fff", background:"#111", minHeight:"calc(100vh - 56px)"}}>Loading map…</div>;
+  if (!world) {
+    return <div style={{padding:20, color:"#fff", background:"#111", minHeight:"calc(100vh - 56px)"}}>{status}</div>;
+  }
 
   return (
     <div style={{ height: "calc(100vh - 56px)", display: "grid", gridTemplateColumns: "1fr 320px" }}>
@@ -130,18 +192,22 @@ function MapPage() {
           <directionalLight position={[10, 16, 8]} intensity={1.2} />
           <OrbitControls ref={controlsRef} enableRotate={false} enablePan={true} enableZoom={true} />
           <GridAxes size={32} />
-          {Object.values(world.grid.tiles).map((t) => <Tile key={t.x + "-" + t.y} tile={t} selected={selectedTile && selectedTile.x === t.x && selectedTile.y === t.y} onSelect={setSelectedTile} />)}
+          {Object.values(world.grid?.tiles || {}).map((t) => (
+            <Tile key={t.x + "-" + t.y} tile={t} selected={selectedTile && selectedTile.x === t.x && selectedTile.y === t.y} onSelect={setSelectedTile} />
+          ))}
           {Object.values(world.characters || {}).map((c) => <Character key={c.id} c={c} />)}
+          {Object.values(world.tagged_characters || {}).map((c) => <Character key={c.profile.id} c={{ id: c.profile.id, name: c.profile.name, position: c.position, thoughts: c.state.current_activity ? `${c.state.current_activity.activity_type}:${c.state.current_activity.tag}` : c.state.mood, needs: { hunger: c.state.needs.hunger, thirst: c.state.needs.thirst, fatigue: c.state.fatigue }, appearance_summary: { age: c.profile.age, sex: c.profile.sex, body_type: c.profile.appearance_tags?.[0]?.tag || "unknown" } }} />)}
         </Canvas>
       </div>
       <div style={{ background: "#111827", color: "#fff", padding: 16, overflow: "auto" }}>
         <h2>Live Simulation</h2>
+        <div>Status: {status}</div>
         <div>Tick: {world.tick || 0}</div>
         <h3>Characters</h3>
         {Object.values(world.characters || {}).map((c) => (
           <div key={c.id} style={{ padding: "10px 0", borderBottom: "1px solid #374151" }}>
             <div><strong>{c.name}</strong></div>
-            <div>Pos: {c.position.x}, {c.position.y}</div>
+            <div>Pos: {c.position?.x}, {c.position?.y}</div>
             <div>Thoughts: {c.thoughts}</div>
             <div>Last action: {c.last_action?.type}</div>
           </div>
@@ -151,17 +217,46 @@ function MapPage() {
   );
 }
 
+function CreatorPage() {
+  return (
+    <div style={{padding:16, color:"#fff", background:"#111", minHeight:"calc(100vh - 56px)"}}>
+      <h2>Character Creator</h2>
+      <div>This tab is available and no longer crashes navigation.</div>
+      <div style={{marginTop:8, opacity:0.8}}>You can merge the full creator form back into this page next.</div>
+    </div>
+  );
+}
+
 export default function App() {
   const [page, setPage] = useState("map");
+
+  const renderPage = () => {
+    switch (page) {
+      case "map":
+        return <MapPage />;
+      case "creator":
+        return <CreatorPage />;
+      case "tagged":
+        return <TaggedProfileEditor />;
+      case "objects":
+        return <ObjectManager />;
+      case "items":
+        return <ItemManager />;
+      case "tiletypes":
+        return <TileTypeManager />;
+      case "debug":
+        return <DebugPage />;
+      default:
+        return <MapPage />;
+    }
+  };
+
   return (
     <div style={{height:"100vh", display:"flex", flexDirection:"column"}}>
       <TopNav page={page} setPage={setPage} />
-      {page === "map" && <MapPage />}
-      {page === "creator" && <div style={{padding:16, color:"#fff", background:"#111", minHeight:"calc(100vh - 56px)"}}>Use the existing character creator from the base repo or continue extending it here.</div>}
-      {page === "objects" && <ObjectManager />}
-      {page === "items" && <ItemManager />}
-      {page === "tiletypes" && <TileTypeManager />}
-      {page === "debug" && <DebugPage />}
+      <ErrorBoundary resetKey={page}>
+        {renderPage()}
+      </ErrorBoundary>
     </div>
   );
 }

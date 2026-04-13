@@ -21,6 +21,7 @@ export default function TopNav({ page, setPage }) {
       <div style={{ fontWeight: 700, marginRight: 8 }}>Neighborhood Sim</div>
       {btn("map", "Map")}
       {btn("creator", "Character Creator")}
+      {btn("tagged", "Tagged Profiles")}
       {btn("objects", "Objects")}
       {btn("items", "Items")}
       {btn("tiletypes", "Tile Types")}

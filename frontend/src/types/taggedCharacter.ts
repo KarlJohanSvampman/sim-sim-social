@@ -1,0 +1,16 @@
+export type Tag = { category: string; tag: string };
+export type InterestTag = { category: "Knowledge" | "Activity"; tag: string; rank?: number; weight?: number };
+export type ActivityHistoryEntry = { tag: string; total_hours: number };
+export type KnowledgeEntry = { tag: string; total_hours: number };
+export type ContactEntry = { character_id: string; hours: number; last_contact_tick?: number; relationship_tags: Tag[] };
+export type AssociatedPerson = { character_id: string; appearance_tags: Tag[]; identity_tags: Tag[] };
+export type ExperienceValence = "positive" | "negative" | "neutral";
+export type ExperienceEntry = { tag: string; valence: ExperienceValence; tick: number; intensity: number; associated_people: AssociatedPerson[]; notes: string };
+export type ExpectationEntry = { source_tags: Tag[]; weight: number; derived_from_count: number };
+export type ExpectationCollection = { positive: ExpectationEntry[]; negative: ExpectationEntry[] };
+export type NeedState = { hunger: number; thirst: number; bladder: number; sleep: number };
+export type ActivityType = "study" | "practice" | "social" | "recreative";
+export type CurrentActivity = { activity_type: ActivityType; tag: string; hours_total: number; hours_completed: number; tick_size_hours: 0.1; requirements: string[]; contacts: string[]; started_at_tick: number };
+export type CharacterProfileV2 = { id: string; name: string; age?: number; sex?: string; intelligence_spectrum: number; identity_tags: Tag[]; appearance_tags: Tag[]; interests: InterestTag[]; activities: ActivityHistoryEntry[]; knowledge: KnowledgeEntry[]; contacts: ContactEntry[]; experiences: ExperienceEntry[]; expectations: ExpectationCollection };
+export type CharacterStateV2 = { needs: NeedState; mood: string; stress: number; focus: number; fatigue: number; intoxication: number; current_activity: CurrentActivity | null };
+export type CharacterV2 = { profile: CharacterProfileV2; state: CharacterStateV2; position: { x: number; y: number; z: number }; inventory_item_ids: string[]; equipped_item_ids: string[]; memory: Record<string, unknown>[] };
