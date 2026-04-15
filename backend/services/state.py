@@ -179,6 +179,30 @@ def init_world():
             if a != b:
                 WORLD["relationships"][rel_key(a, b)] = {"trust": 0.0, "affection": 0.0, "fear": 0.0}
 
+
+
+def create_object(obj):
+    WORLD.setdefault("objects", {})
+    WORLD["objects"][obj["id"]] = obj
+    return obj
+
+def move_object(obj_id, x, y, z=0):
+    for tile in WORLD["grid"]["tiles"].values():
+        existing = tile.get("object")
+        if existing and existing.get("id") == obj_id:
+            tile["object"] = None
+
+    if obj_id in WORLD.get("objects", {}):
+        key_3d = f"{x},{y},{z}"
+        key_2d = f"{x},{y}"
+        if key_3d in WORLD["grid"]["tiles"]:
+            WORLD["grid"]["tiles"][key_3d]["object"] = WORLD["objects"][obj_id]
+        elif key_2d in WORLD["grid"]["tiles"]:
+            WORLD["grid"]["tiles"][key_2d]["object"] = WORLD["objects"][obj_id]
+
+    return WORLD.get("objects", {}).get(obj_id)
+
+
 def get_world():
     return WORLD
 

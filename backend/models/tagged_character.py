@@ -108,8 +108,6 @@ class CharacterStateV2(BaseModel):
     current_activity: CurrentActivity | None = None
     roam_tiles_remaining: int = Field(default=0, ge=0)
     last_idle_roll: list[int] = Field(default_factory=list)
-    roam_target: dict[str, int | str | float] | None = None
-    roam_path: list[dict[str, int]] = Field(default_factory=list)
 
 class CharacterV2(BaseModel):
     profile: CharacterProfileV2

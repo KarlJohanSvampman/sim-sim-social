@@ -6,8 +6,6 @@ from services.state import get_world
 from services.tagged_profile_store import TAGGED_CHARACTERS
 from services.tagged_runtime import seed_default_tagged_characters
 from services.ws import manager
-from services.roam_planner import choose_roam_destination
-from services.roam_path import path_to
 
 TRIGGER_DOUBLES = {(1,1), (4,4), (6,6)}
 
@@ -35,32 +33,23 @@ def roll_idle_dice(character):
     character.state.roam_tiles_remaining = d1 + d2
     return d1, d2
 
-def choose_and_store_roam_target(character):
-    roam_budget = max(1, int(character.state.roam_tiles_remaining or 1))
-    target = choose_roam_destination(character, roam_budget)
-    character.state.roam_target = target
-    character.state.roam_path = []
-    if target:
-        path = path_to(character.position["x"], character.position["y"], target["x"], target["y"])
-        if len(path) > 1:
-            character.state.roam_path = [{"x": x, "y": y, "z": 0} for x, y in path[1:]]
-    return target
+def valid_neighbors(world, x, y):
+    candidates = [(x+1,y), (x-1,y), (x,y+1), (x,y-1)]
+    out = []
+    for nx, ny in candidates:
+        tile = world["grid"]["tiles"].get(f"{nx},{ny}")
+        if tile and not tile.get("blocks_movement"):
+            out.append((nx, ny))
+    return out
 
 def roam_one_step(world, character):
-    if not character.state.roam_path:
-        choose_and_store_roam_target(character)
-    if character.state.roam_path:
-        step = character.state.roam_path.pop(0)
-        character.position["x"] = step["x"]
-        character.position["y"] = step["y"]
-        character.state.roam_tiles_remaining = max(0, character.state.roam_tiles_remaining - 1)
-        target = character.state.roam_target or {}
-        room_tag = target.get("room_tag", "unknown")
-        character.state.mood = f"roaming_to:{room_tag}"
-        if character.state.roam_tiles_remaining == 0:
-            character.state.roam_target = None
-            character.state.roam_path = []
+    pos = character.position
+    neighbors = valid_neighbors(world, pos["x"], pos["y"])
+    if not neighbors:
+        character.state.roam_tiles_remaining = 0
         return
+    nx, ny = random.choice(neighbors)
+    pos["x"], pos["y"] = nx, ny
     character.state.roam_tiles_remaining = max(0, character.state.roam_tiles_remaining - 1)
     character.state.mood = "roaming"
 
@@ -77,7 +66,6 @@ async def tagged_sim_loop():
                 character.state.mood = "busy" if character.state.current_activity else "idle"
                 if character.state.current_activity is None:
                     roll_idle_dice(character)
-                    choose_and_store_roam_target(character)
                 continue
 
             if character.state.roam_tiles_remaining > 0:
@@ -85,8 +73,6 @@ async def tagged_sim_loop():
                 continue
 
             d1, d2 = roll_idle_dice(character)
-            choose_and_store_roam_target(character)
-
             if (d1, d2) not in TRIGGER_DOUBLES:
                 roam_one_step(world, character)
                 continue
@@ -94,7 +80,7 @@ async def tagged_sim_loop():
             available_requirements = requirements_for_character(character)
             prompt_payload = build_prompt_payload(character, available_requirements, world["tick"])
             decision = choose_action_v2(character, available_requirements, world["tick"])
-            character.memory.append({"tick": world["tick"], "idle_roll": [d1, d2], "prompt_payload": prompt_payload, "decision": decision, "roam_target": character.state.roam_target})
+            character.memory.append({"tick": world["tick"], "idle_roll": [d1, d2], "prompt_payload": prompt_payload, "decision": decision})
             character.memory = character.memory[-25:]
 
             ok, reason = validate_decision_action(character, decision, available_requirements)
@@ -106,8 +92,6 @@ async def tagged_sim_loop():
                 if action["type"] == "engage_activity":
                     start_activity(character, world["tick"], action["activity_type"], action["tag"], float(action["hours"]), [], action.get("contacts", []))
                     character.state.mood = "busy"
-                    character.state.roam_target = None
-                    character.state.roam_path = []
                 elif action["type"] == "interrupt_activity":
                     interrupt_activity(character, action.get("reason", "unknown"))
                 elif action["type"] == "wander":
