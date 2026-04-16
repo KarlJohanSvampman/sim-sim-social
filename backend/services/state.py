@@ -15,6 +15,7 @@ WORLD = {
     "objects": {},
     "items": {},
     "tagged_characters": {},
+    "config": {"tick_rate": 1.0, "llm_interval_seconds": 30.0},
     "calendar": {
         "year": 2026,
         "month": 4,
@@ -22,7 +23,8 @@ WORLD = {
         "minute_of_day": 480
     },
     "action_definitions": {},
-    "activity_definitions": {}
+    "activity_definitions": {},
+    "llm_logs": []
 }
 
 def make_tile(x, y):

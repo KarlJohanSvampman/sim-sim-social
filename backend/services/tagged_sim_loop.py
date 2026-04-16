@@ -8,9 +8,39 @@ from services.tagged_runtime import seed_default_tagged_characters
 from services.ws import manager
 from services.roam_planner import choose_roam_destination
 from services.roam_path import path_to
+from services.llm_service import maybe_run_decision_llm
 from services.speech_engine import pick_line
 
 TRIGGER_DOUBLES = {(1,1), (2,2), (3,3), (4,4), (5,5), (6,6)}
+
+def maybe_apply_llm_result(character, llm_result, world_tick):
+    if not llm_result:
+        return False
+    action = llm_result.get("action", {}) or {}
+    speech = llm_result.get("speech", []) or []
+    if speech:
+        line = " ".join([str(x) for x in speech[:2]])
+        maybe_set_speech(character, world_tick, line)
+
+    action_type = action.get("type")
+    if action_type == "speak_to":
+        target_id = action.get("target_character_id")
+        if target_id:
+            character.state.mood = f"talking_to:{target_id}"
+            character.state.dwell_ticks_remaining = max(character.state.dwell_ticks_remaining, 2)
+            return True
+    if action_type == "engage_activity":
+        try:
+            start_activity(character, world_tick, action["activity_type"], action.get("tag", "general_activity"), float(action.get("hours", 0.1)), [], [])
+            character.state.mood = "busy"
+            return True
+        except Exception:
+            return False
+    if action_type == "continue_activity":
+        character.state.mood = "busy"
+        return True
+    return False
+
 
 def tick_base_state(character):
     character.state.needs.hunger = min(100.0, character.state.needs.hunger + 0.12)
@@ -141,6 +171,14 @@ async def tagged_sim_loop():
 
             available_requirements = requirements_for_character(character)
             prompt_payload = build_prompt_payload(character, available_requirements, world["tick"])
+
+            # Build dict view for LLM and ask only on configured cadence.
+            llm_result = maybe_run_decision_llm(character.model_dump(), world)
+            if llm_result and maybe_apply_llm_result(character, llm_result, world["tick"]):
+                character.memory.append({"tick": world["tick"], "idle_roll": [d1, d2], "prompt_payload": prompt_payload, "llm_result": llm_result, "roam_target": character.state.roam_target})
+                character.memory = character.memory[-25:]
+                continue
+
             decision = choose_action_v2(character, available_requirements, world["tick"])
             character.memory.append({"tick": world["tick"], "idle_roll": [d1, d2], "prompt_payload": prompt_payload, "decision": decision, "roam_target": character.state.roam_target})
             character.memory = character.memory[-25:]
