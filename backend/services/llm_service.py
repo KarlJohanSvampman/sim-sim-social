@@ -1,23 +1,8 @@
 import json
-import os
 import time
 
+from services.provider_client import call_chat_provider
 from services.state import get_world
-
-try:
-    from openai import OpenAI
-except Exception:
-    OpenAI = None
-
-
-def llm_enabled() -> bool:
-    return bool(os.getenv("OPENAI_API_KEY")) and OpenAI is not None
-
-
-def _client():
-    if not llm_enabled():
-        return None
-    return OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 
 def _append_log(entry: dict):
@@ -48,13 +33,6 @@ def build_decision_prompt(character: dict, world: dict) -> str:
 
     return f"""You are the live action planner for one simulated human in a sandbox life sim.
 
-IMPORTANT EXPERIMENT SETTINGS:
-- activity logic is disabled
-- roaming logic is disabled
-- decide behavior using only needs, tags, current mood/state, and broad human judgment
-- you must return a SINGLE action request in strict JSON
-- the action can be short or long because actions can carry duration_seconds
-
 Return STRICT JSON ONLY with this exact shape:
 {{
   "thought": "brief internal reasoning",
@@ -75,8 +53,6 @@ Rules:
 - duration_seconds must be an integer from 1 to 60
 - prefer believable human pacing
 - if speaking to someone, set name="speak" and include target_character_id when possible
-- if no urgent need exists, "wait", "observe", "speak", or "relax" are acceptable
-- do NOT use activities
 - be varied; avoid repeating the same exact action forever
 
 Current date/time:
@@ -107,12 +83,13 @@ def maybe_run_decision_llm(character: dict, world: dict, now_ts: float | None = 
     prompt = build_decision_prompt(character, world)
     state["last_llm_at"] = now_ts
 
-    if not llm_enabled():
+    provider_cfg = (world.get("config", {}) or {}).get("llm_provider", {})
+    if not provider_cfg:
         result = {
-            "thought": "LLM disabled because OPENAI_API_KEY is missing or SDK unavailable.",
+            "thought": "No llm_provider configured.",
             "action": {
                 "name": "wait",
-                "intention": "pause because live LLM is disabled",
+                "intention": "pause because no provider is configured",
                 "target_character_id": "",
                 "target_tile": {"x": character.get("position", {}).get("x", 0), "y": character.get("position", {}).get("y", 0)},
                 "utterance": "",
@@ -121,42 +98,34 @@ def maybe_run_decision_llm(character: dict, world: dict, now_ts: float | None = 
                 "post_action_delay": 2
             }
         }
-        _append_log({
-            "ts": now_ts,
-            "character_id": character.get("profile", {}).get("id"),
-            "prompt": prompt,
-            "response": result,
-            "mode": "disabled_fallback"
-        })
+        _append_log({"ts": now_ts, "character_id": character.get("profile", {}).get("id"), "prompt": prompt, "response": result, "mode": "no_provider"})
         return result
 
-    client = _client()
     try:
-        resp = client.chat.completions.create(
-            model=os.getenv("OPENAI_MODEL", "gpt-4.1-mini"),
-            temperature=0.8,
-            messages=[
-                {"role": "system", "content": "You produce strict JSON only."},
-                {"role": "user", "content": prompt},
-            ],
-        )
-        text = (resp.choices[0].message.content or "").strip()
+        provider_result = call_chat_provider(provider_cfg, [
+            {"role": "system", "content": "You produce strict JSON only."},
+            {"role": "user", "content": prompt},
+        ])
+        text = provider_result["text"]
         parsed = json.loads(text)
         _append_log({
             "ts": now_ts,
             "character_id": character.get("profile", {}).get("id"),
             "prompt": prompt,
+            "provider": provider_cfg,
+            "request_body": provider_result.get("request_body"),
+            "url": provider_result.get("url"),
             "response_raw": text,
             "response": parsed,
-            "mode": "live_llm"
+            "mode": "provider_live"
         })
         return parsed
     except Exception as e:
         result = {
-            "thought": f"LLM call failed: {e}",
+            "thought": f"Provider call failed: {e}",
             "action": {
                 "name": "wait",
-                "intention": "fallback after llm error",
+                "intention": "fallback after provider error",
                 "target_character_id": "",
                 "target_tile": {"x": character.get("position", {}).get("x", 0), "y": character.get("position", {}).get("y", 0)},
                 "utterance": "",
@@ -169,7 +138,8 @@ def maybe_run_decision_llm(character: dict, world: dict, now_ts: float | None = 
             "ts": now_ts,
             "character_id": character.get("profile", {}).get("id"),
             "prompt": prompt,
+            "provider": provider_cfg,
             "response": result,
-            "mode": "error_fallback"
+            "mode": "provider_error"
         })
         return result

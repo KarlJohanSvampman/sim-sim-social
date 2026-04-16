@@ -15,7 +15,24 @@ WORLD = {
     "objects": {},
     "items": {},
     "tagged_characters": {},
-    "config": {"tick_rate": 1.0, "llm_interval_seconds": 30.0, "enable_activity_logic": False, "enable_roaming_logic": False, "ai_action_mode": "actions_only"},
+    "config": {"tick_rate": 1.0, "llm_interval_seconds": 30.0,
+        "llm_provider": {
+            "provider_kind": "openai_compatible",
+            "label": "Ollama (localhost)",
+            "base_url": "http://localhost:11434/v1/",
+            "chat_path": "chat/completions",
+            "model": "llama3.1",
+            "api_key_env": "",
+            "auth_header_name": "Authorization",
+            "auth_header_template": "",
+            "request_template": {
+                "model": "{{model}}",
+                "messages": "{{messages}}",
+                "temperature": 0.8,
+                "stream": False
+            },
+            "response_text_path": "choices.0.message.content"
+        }, "enable_activity_logic": False, "enable_roaming_logic": False, "ai_action_mode": "actions_only"},
     "calendar": {
         "year": 2026,
         "month": 4,
@@ -88,10 +105,103 @@ def init():
     ]
 
     WORLD["action_definitions"].update({
-        "act_move": {"id": "act_move", "name": "move_to_tile", "category": "movement", "description": "Move toward a target tile."},
-        "act_talk": {"id": "act_talk", "name": "speak", "category": "social", "description": "Speak or converse with another character."},
-        "act_use": {"id": "act_use", "name": "use_object", "category": "interaction", "description": "Use an object on the current tile or nearby."}
-    })
+    "act_wait": {
+        "id": "act_wait",
+        "name": "wait",
+        "category": "idle",
+        "description": "Pause briefly without changing position.",
+        "supports_target_character": False,
+        "supports_target_tile": False,
+        "supports_utterance": False,
+        "default_pre_action_delay": 2,
+        "default_duration_seconds": 4,
+        "default_post_action_delay": 2,
+        "min_duration_seconds": 1,
+        "max_duration_seconds": 60,
+        "allowed_intentions": ["pause", "think", "wait"],
+        "notes": ""
+    },
+    "act_move": {
+        "id": "act_move",
+        "name": "move",
+        "category": "movement",
+        "description": "Move toward a target tile.",
+        "supports_target_character": False,
+        "supports_target_tile": True,
+        "supports_utterance": False,
+        "default_pre_action_delay": 1,
+        "default_duration_seconds": 3,
+        "default_post_action_delay": 1,
+        "min_duration_seconds": 1,
+        "max_duration_seconds": 30,
+        "allowed_intentions": ["go somewhere", "approach", "relocate"],
+        "notes": ""
+    },
+    "act_speak": {
+        "id": "act_speak",
+        "name": "speak",
+        "category": "social",
+        "description": "Speak to another character or aloud.",
+        "supports_target_character": True,
+        "supports_target_tile": False,
+        "supports_utterance": True,
+        "default_pre_action_delay": 2,
+        "default_duration_seconds": 6,
+        "default_post_action_delay": 2,
+        "min_duration_seconds": 1,
+        "max_duration_seconds": 45,
+        "allowed_intentions": ["talk", "ask", "comment", "greet"],
+        "notes": ""
+    },
+    "act_observe": {
+        "id": "act_observe",
+        "name": "observe",
+        "category": "perception",
+        "description": "Look around and pay attention to surroundings.",
+        "supports_target_character": False,
+        "supports_target_tile": True,
+        "supports_utterance": False,
+        "default_pre_action_delay": 1,
+        "default_duration_seconds": 5,
+        "default_post_action_delay": 1,
+        "min_duration_seconds": 1,
+        "max_duration_seconds": 30,
+        "allowed_intentions": ["inspect", "watch", "notice"],
+        "notes": ""
+    },
+    "act_relax": {
+        "id": "act_relax",
+        "name": "relax",
+        "category": "self_regulation",
+        "description": "Rest, calm down, or decompress.",
+        "supports_target_character": False,
+        "supports_target_tile": False,
+        "supports_utterance": False,
+        "default_pre_action_delay": 2,
+        "default_duration_seconds": 10,
+        "default_post_action_delay": 2,
+        "min_duration_seconds": 1,
+        "max_duration_seconds": 60,
+        "allowed_intentions": ["decompress", "rest", "reset"],
+        "notes": ""
+    },
+    "act_study": {
+        "id": "act_study",
+        "name": "study",
+        "category": "cognitive",
+        "description": "Spend time learning or thinking deeply.",
+        "supports_target_character": False,
+        "supports_target_tile": False,
+        "supports_utterance": False,
+        "default_pre_action_delay": 2,
+        "default_duration_seconds": 15,
+        "default_post_action_delay": 2,
+        "min_duration_seconds": 1,
+        "max_duration_seconds": 60,
+        "allowed_intentions": ["learn", "analyze", "focus"],
+        "notes": ""
+    }
+})
     WORLD["activity_definitions"].update({
         "av_sleep": {"id": "av_sleep", "name": "sleep", "type": "recreative", "description": "Sleep and recover fatigue.", "min_hours": 0.5},
         "av_eat": {"id": "av_eat", "name": "eat", "type": "recreative", "description": "Consume food to reduce hunger.", "min_hours": 0.1},
