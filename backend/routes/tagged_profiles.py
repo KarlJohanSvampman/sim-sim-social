@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException
-from services.tagged_profile_store import upsert_tagged_character, get_tagged_character, list_tagged_characters
+from services.tagged_profile_store import upsert_tagged_character, get_tagged_character, list_tagged_characters, TAGGED_CHARACTERS
 
 router = APIRouter(prefix="/tagged-profiles")
 
@@ -17,3 +17,11 @@ def get_profile(char_id: str):
 @router.post("")
 def upsert_profile(payload: dict):
     return upsert_tagged_character(payload)
+
+
+@router.delete("/{char_id}")
+def delete_profile(char_id: str):
+    if char_id not in TAGGED_CHARACTERS:
+        raise HTTPException(status_code=404, detail="Profile not found")
+    deleted = TAGGED_CHARACTERS.pop(char_id)
+    return {"deleted": deleted.profile.id}

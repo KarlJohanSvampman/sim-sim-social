@@ -23,6 +23,8 @@ export default function TopNav({ page, setPage }) {
       {btn("tagged", "Profiles")}
       {btn("objects", "Objects")}
       {btn("items", "Items")}
+      {btn("actions", "Actions")}
+      {btn("activities", "Activities")}
       {btn("tiletypes", "Tile Types")}
       {btn("debug", "Debug")}
     </div>

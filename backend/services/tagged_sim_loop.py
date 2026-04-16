@@ -101,6 +101,11 @@ async def tagged_sim_loop():
     world = get_world()
     while True:
         world["tick"] = world.get("tick", 0) + 1
+        world.setdefault("calendar", {"year": 2026, "month": 4, "day": 16, "minute_of_day": 480})
+        world["calendar"]["minute_of_day"] += 10
+        if world["calendar"]["minute_of_day"] >= 1440:
+            world["calendar"]["minute_of_day"] = 0
+            world["calendar"]["day"] += 1
         for char_id, character in TAGGED_CHARACTERS.items():
             tick_base_state(character)
             clear_expired_speech(character, world["tick"])

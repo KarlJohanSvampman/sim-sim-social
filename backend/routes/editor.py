@@ -54,3 +54,42 @@ def update_tile(tile_key: str, updates: dict):
     if not tile:
         raise HTTPException(status_code=404, detail="Tile not found")
     return tile
+
+
+@router.get("/actions")
+def list_actions():
+    return list(get_world().get("action_definitions", {}).values())
+
+@router.post("/actions")
+def upsert_action(action: dict):
+    world = get_world()
+    world.setdefault("action_definitions", {})
+    world["action_definitions"][action["id"]] = action
+    return action
+
+@router.delete("/actions/{action_id}")
+def delete_action(action_id: str):
+    world = get_world()
+    if action_id not in world.get("action_definitions", {}):
+        raise HTTPException(status_code=404, detail="Action not found")
+    del world["action_definitions"][action_id]
+    return {"deleted": action_id}
+
+@router.get("/activities")
+def list_activities():
+    return list(get_world().get("activity_definitions", {}).values())
+
+@router.post("/activities")
+def upsert_activity(activity: dict):
+    world = get_world()
+    world.setdefault("activity_definitions", {})
+    world["activity_definitions"][activity["id"]] = activity
+    return activity
+
+@router.delete("/activities/{activity_id}")
+def delete_activity(activity_id: str):
+    world = get_world()
+    if activity_id not in world.get("activity_definitions", {}):
+        raise HTTPException(status_code=404, detail="Activity not found")
+    del world["activity_definitions"][activity_id]
+    return {"deleted": activity_id}

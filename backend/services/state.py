@@ -14,7 +14,15 @@ WORLD = {
     "news": [],
     "objects": {},
     "items": {},
-    "tagged_characters": {}
+    "tagged_characters": {},
+    "calendar": {
+        "year": 2026,
+        "month": 4,
+        "day": 16,
+        "minute_of_day": 480
+    },
+    "action_definitions": {},
+    "activity_definitions": {}
 }
 
 def make_tile(x, y):
@@ -76,6 +84,18 @@ def init():
     WORLD["grid"]["tiles"]["4,3"]["items"] = [
         {"id": "item_phone", "name": "Smartphone", "type": "smartphone"}
     ]
+
+    WORLD["action_definitions"].update({
+        "act_move": {"id": "act_move", "name": "move_to_tile", "category": "movement", "description": "Move toward a target tile."},
+        "act_talk": {"id": "act_talk", "name": "speak", "category": "social", "description": "Speak or converse with another character."},
+        "act_use": {"id": "act_use", "name": "use_object", "category": "interaction", "description": "Use an object on the current tile or nearby."}
+    })
+    WORLD["activity_definitions"].update({
+        "av_sleep": {"id": "av_sleep", "name": "sleep", "type": "recreative", "description": "Sleep and recover fatigue.", "min_hours": 0.5},
+        "av_eat": {"id": "av_eat", "name": "eat", "type": "recreative", "description": "Consume food to reduce hunger.", "min_hours": 0.1},
+        "av_conversation": {"id": "av_conversation", "name": "conversation", "type": "social", "description": "Spend time talking with another sim.", "min_hours": 0.1},
+        "av_study": {"id": "av_study", "name": "general_study", "type": "study", "description": "Study a knowledge topic.", "min_hours": 0.2}
+    })
 
 def create_object(obj):
     WORLD.setdefault("objects", {})

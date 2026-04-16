@@ -5,6 +5,8 @@ import TopNav from "./components/TopNav";
 import RightToolbar from "./components/RightToolbar";
 import ObjectManager from "./pages/ObjectManager";
 import ItemManager from "./pages/ItemManager";
+import ActionManager from "./pages/ActionManager";
+import ActivityManager from "./pages/ActivityManager";
 import TileTypeManager from "./pages/TileTypeManager";
 import DebugPage from "./pages/DebugPage";
 import TaggedProfileEditor from "./pages/TaggedProfileEditor";
@@ -43,7 +45,7 @@ function Tile({ tile, selected, onSelect }) {
   const color = tile.tile_type === "wall" ? "#4b5563" : selected ? "#f59e0b" : "#9ca3af";
   const h = tile.tile_type === "wall" ? 1.2 : 0.08;
   return (
-    <group position={[tile.x, 0, tile.y]}>
+    <group onClick={(e) => { e.stopPropagation(); onSelect && onSelect(); }} position={[tile.x, 0, tile.y]}>
       <mesh position={[0, h / 2, 0]} onClick={(e) => { e.stopPropagation(); onSelect(tile); }}>
         <boxGeometry args={[0.96, h, 0.96]} />
         <meshStandardMaterial color={color} />
@@ -58,10 +60,10 @@ function Tile({ tile, selected, onSelect }) {
   );
 }
 
-function Character({ c }) {
+function Character({ c, onSelect }) {
   const app = c.appearance_summary || {};
   return (
-    <group position={[c.position.x, 0.65, c.position.y]}>
+    <group onClick={(e) => { e.stopPropagation(); onSelect && onSelect(); }} position={[c.position.x, 0.65, c.position.y]}>
       <mesh>
         <capsuleGeometry args={[0.22, 0.8, 4, 8]} />
         <meshStandardMaterial color="#2563eb" />
@@ -106,6 +108,7 @@ function TileOverlay({ tile }) {
 function MapPage() {
   const [world, setWorld] = useState(null);
   const [selectedTile, setSelectedTile] = useState(null);
+  const [selectedChar, setSelectedChar] = useState(null);
   const [status, setStatus] = useState("Loading map…");
   const controlsRef = useRef(null);
 
@@ -197,8 +200,8 @@ function MapPage() {
           {Object.values(world.grid?.tiles || {}).map((t) => (
             <Tile key={t.x + "-" + t.y} tile={t} selected={selectedTile && selectedTile.x === t.x && selectedTile.y === t.y} onSelect={setSelectedTile} />
           ))}
-          {Object.values(world.characters || {}).map((c) => <Character key={c.id} c={c} />)}
-          {Object.values(world.tagged_characters || {}).map((c) => <Character key={c.profile.id} c={{ id: c.profile.id, name: c.profile.name, position: c.position, thoughts: c.state.current_activity ? `${c.state.current_activity.activity_type}:${c.state.current_activity.tag}` : c.state.mood, needs: { hunger: c.state.needs.hunger, thirst: c.state.needs.thirst, fatigue: c.state.fatigue }, spoken_text: c.state.spoken_text, appearance_summary: { age: c.profile.age, sex: c.profile.sex, body_type: c.profile.appearance_tags?.[0]?.tag || "unknown" } }} />)}
+          {Object.values(world.characters || {}).map((c) => <Character key={c.id} c={c} onSelect={() => setSelectedChar(c)} />)}
+          {Object.values(world.tagged_characters || {}).map((c) => <Character key={c.profile.id} c={{ profile: c.profile, state: c.state, id: c.profile.id, name: c.profile.name, position: c.position, thoughts: c.state.current_activity ? `${c.state.current_activity.activity_type}:${c.state.current_activity.tag}` : c.state.mood, needs: { hunger: c.state.needs.hunger, thirst: c.state.needs.thirst, fatigue: c.state.fatigue }, spoken_text: c.state.spoken_text, appearance_summary: { age: c.profile.age, sex: c.profile.sex, body_type: c.profile.appearance_tags?.[0]?.tag || "unknown" } }} onSelect={() => setSelectedChar(c)} />)}
         </Canvas>
       </div>
       <div style={{ background: "#111827", color: "#fff", padding: 16, overflow: "auto" }}>
@@ -238,6 +241,10 @@ export default function App() {
         return <ObjectManager />;
       case "items":
         return <ItemManager />;
+      case "actions":
+        return <ActionManager />;
+      case "activities":
+        return <ActivityManager />;
       case "tiletypes":
         return <TileTypeManager />;
       case "debug":
