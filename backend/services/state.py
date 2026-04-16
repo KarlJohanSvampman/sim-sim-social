@@ -15,7 +15,7 @@ WORLD = {
     "objects": {},
     "items": {},
     "tagged_characters": {},
-    "config": {"tick_rate": 1.0, "llm_interval_seconds": 30.0},
+    "config": {"tick_rate": 1.0, "llm_interval_seconds": 30.0, "enable_activity_logic": false, "enable_roaming_logic": false, "ai_action_mode": "actions_only"},
     "calendar": {
         "year": 2026,
         "month": 4,

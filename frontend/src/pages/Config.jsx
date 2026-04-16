@@ -2,7 +2,13 @@
 import React, { useEffect, useState } from "react";
 
 export default function Config() {
-  const [cfg, setCfg] = useState({ tick_rate: 1.0, llm_interval_seconds: 30.0 });
+  const [cfg, setCfg] = useState({
+    tick_rate: 1.0,
+    llm_interval_seconds: 30.0,
+    enable_activity_logic: false,
+    enable_roaming_logic: false,
+    ai_action_mode: "actions_only"
+  });
   const [status, setStatus] = useState("Loading...");
 
   useEffect(() => {
@@ -11,7 +17,10 @@ export default function Config() {
       .then((data) => {
         setCfg({
           tick_rate: data.tick_rate ?? 1.0,
-          llm_interval_seconds: data.llm_interval_seconds ?? 30.0
+          llm_interval_seconds: data.llm_interval_seconds ?? 30.0,
+          enable_activity_logic: data.enable_activity_logic ?? false,
+          enable_roaming_logic: data.enable_roaming_logic ?? false,
+          ai_action_mode: data.ai_action_mode ?? "actions_only"
         });
         setStatus("Loaded");
       })
@@ -32,7 +41,7 @@ export default function Config() {
       <h2>Config</h2>
       <div style={{marginBottom:8, opacity:0.8}}>Status: {status}</div>
 
-      <div style={{maxWidth:480, display:"grid", gap:16, background:"#1f2937", padding:16, borderRadius:8}}>
+      <div style={{maxWidth:560, display:"grid", gap:16, background:"#1f2937", padding:16, borderRadius:8}}>
         <label>
           Tick Rate (seconds)
           <input
@@ -56,12 +65,37 @@ export default function Config() {
           </select>
         </label>
 
+        <label>
+          <input
+            type="checkbox"
+            checked={cfg.enable_activity_logic}
+            onChange={e => setCfg({...cfg, enable_activity_logic: e.target.checked})}
+          /> Enable activity logic
+        </label>
+
+        <label>
+          <input
+            type="checkbox"
+            checked={cfg.enable_roaming_logic}
+            onChange={e => setCfg({...cfg, enable_roaming_logic: e.target.checked})}
+          /> Enable roaming logic
+        </label>
+
+        <label>
+          AI Action Mode
+          <select
+            value={cfg.ai_action_mode}
+            onChange={e => setCfg({...cfg, ai_action_mode: e.target.value})}
+            style={{display:"block", width:"100%"}}
+          >
+            <option value="actions_only">actions_only</option>
+          </select>
+        </label>
+
         <div style={{fontSize:12, opacity:0.8}}>
-          This controls how often a character may call the chatbot for a fresh decision or conversational turn.
+          Recommended for this experiment: activities OFF, roaming OFF, actions_only mode ON.
         </div>
 
         <button onClick={save}>Save Config</button>
       </div>
     </div>
-  );
-}

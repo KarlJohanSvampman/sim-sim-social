@@ -1,45 +1,10 @@
 import asyncio
-import random
-from services.activity_engine import start_activity, tick_current_activity, interrupt_activity
-from services.decision_engine_v2 import choose_action_v2, validate_decision_action, build_prompt_payload
+
+from services.llm_service import maybe_run_decision_llm
 from services.state import get_world
 from services.tagged_profile_store import TAGGED_CHARACTERS
 from services.tagged_runtime import seed_default_tagged_characters
 from services.ws import manager
-from services.roam_planner import choose_roam_destination
-from services.roam_path import path_to
-from services.llm_service import maybe_run_decision_llm
-from services.speech_engine import pick_line
-
-TRIGGER_DOUBLES = {(1,1), (2,2), (3,3), (4,4), (5,5), (6,6)}
-
-def maybe_apply_llm_result(character, llm_result, world_tick):
-    if not llm_result:
-        return False
-    action = llm_result.get("action", {}) or {}
-    speech = llm_result.get("speech", []) or []
-    if speech:
-        line = " ".join([str(x) for x in speech[:2]])
-        maybe_set_speech(character, world_tick, line)
-
-    action_type = action.get("type")
-    if action_type == "speak_to":
-        target_id = action.get("target_character_id")
-        if target_id:
-            character.state.mood = f"talking_to:{target_id}"
-            character.state.dwell_ticks_remaining = max(character.state.dwell_ticks_remaining, 2)
-            return True
-    if action_type == "engage_activity":
-        try:
-            start_activity(character, world_tick, action["activity_type"], action.get("tag", "general_activity"), float(action.get("hours", 0.1)), [], [])
-            character.state.mood = "busy"
-            return True
-        except Exception:
-            return False
-    if action_type == "continue_activity":
-        character.state.mood = "busy"
-        return True
-    return False
 
 
 def tick_base_state(character):
@@ -49,8 +14,6 @@ def tick_base_state(character):
     character.state.needs.sleep = min(100.0, character.state.needs.sleep + 0.08)
     character.state.fatigue = min(100.0, character.state.fatigue + 0.04)
 
-def requirements_for_character(character) -> set[str]:
-    return {"smartphone", "computer", "bed", "food", "restroom", "tv", "book", "stove"}
 
 def sync_tagged_characters_into_world():
     world = get_world()
@@ -59,72 +22,144 @@ def sync_tagged_characters_into_world():
     for char_id, character in TAGGED_CHARACTERS.items():
         world["tagged_characters"][char_id] = character.model_dump()
 
-def roll_idle_dice(character):
-    d1 = random.randint(1, 6)
-    d2 = random.randint(1, 6)
-    character.state.last_idle_roll = [d1, d2]
-    character.state.roam_tiles_remaining = d1 + d2
-    return d1, d2
-
-def choose_and_store_roam_target(character):
-    roam_budget = max(1, int(character.state.roam_tiles_remaining or 1))
-    target = choose_roam_destination(character, roam_budget)
-    character.state.roam_target = target
-    character.state.roam_path = []
-    if target:
-        path = path_to(character.position["x"], character.position["y"], target["x"], target["y"])
-        if len(path) > 1:
-            character.state.roam_path = [{"x": x, "y": y, "z": 0} for x, y in path[1:]]
-    return target
 
 def maybe_set_speech(character, world_tick, text):
+    if not text:
+        return
     character.state.spoken_text = text
-    character.state.speech_expires_tick = world_tick + 5
+    character.state.speech_expires_tick = world_tick + 12
 
-def maybe_context_speech(character, world_tick, activity_tag=None, chance=0.2):
-    if random.random() < chance:
-        maybe_set_speech(character, world_tick, pick_line(character, activity_tag))
 
 def clear_expired_speech(character, world_tick):
-    if character.state.speech_expires_tick and world_tick >= character.state.speech_expires_tick:
+    if getattr(character.state, "speech_expires_tick", 0) and world_tick >= character.state.speech_expires_tick:
         character.state.spoken_text = ""
         character.state.speech_expires_tick = 0
 
-def roam_one_step(world, character):
-    # Pause sometimes instead of moving every tick
-    if character.state.dwell_ticks_remaining > 0:
-        character.state.dwell_ticks_remaining -= 1
-        character.state.mood = "pausing"
+
+def secs_to_ticks(world, seconds: int) -> int:
+    tick_rate = float(world.get("config", {}).get("tick_rate", 1.0))
+    if tick_rate <= 0:
+        tick_rate = 1.0
+    return max(1, int(round(seconds / tick_rate)))
+
+
+def occupied_positions(exclude_id=None):
+    occ = {}
+    for cid, c in TAGGED_CHARACTERS.items():
+        if cid == exclude_id:
+            continue
+        occ[(c.position["x"], c.position["y"])] = cid
+    return occ
+
+
+def step_toward(character, target, exclude_id=None):
+    if not target:
+        return
+    world = get_world()
+    x, y = character.position["x"], character.position["y"]
+    tx, ty = int(target.get("x", x)), int(target.get("y", y))
+    candidates = []
+    if tx > x:
+        candidates.append((x + 1, y))
+    elif tx < x:
+        candidates.append((x - 1, y))
+    if ty > y:
+        candidates.append((x, y + 1))
+    elif ty < y:
+        candidates.append((x, y - 1))
+    candidates += [(x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)]
+
+    occ = occupied_positions(exclude_id=exclude_id)
+    for nx, ny in candidates:
+        tile = world["grid"]["tiles"].get(f"{nx},{ny}")
+        if not tile or tile.get("blocks_movement"):
+            continue
+        if (nx, ny) in occ:
+            continue
+        character.position["x"], character.position["y"] = nx, ny
         return
 
-    if character.state.move_cooldown_ticks > 0:
-        character.state.move_cooldown_ticks -= 1
-        character.state.mood = "walking_pause"
+
+def face_target(character, target_character_id):
+    target = TAGGED_CHARACTERS.get(target_character_id)
+    if not target:
         return
+    character.state.current_intention = f"facing:{target_character_id}"
 
-    if not character.state.roam_path:
-        choose_and_store_roam_target(character)
 
-    if character.state.roam_path:
-        step = character.state.roam_path.pop(0)
-        character.position["x"] = step["x"]
-        character.position["y"] = step["y"]
-        character.state.roam_tiles_remaining = max(0, character.state.roam_tiles_remaining - 1)
-        target = character.state.roam_target or {}
-        room_tag = target.get("room_tag", "unknown")
-        character.state.mood = f"roaming_to:{room_tag}"
-        character.state.move_cooldown_ticks = 1  # move every other tick
-        if random.random() < 0.18:
-            character.state.dwell_ticks_remaining = random.randint(1, 3)
-        if character.state.roam_tiles_remaining == 0:
-            character.state.roam_target = None
-            character.state.roam_path = []
-            character.state.dwell_ticks_remaining = random.randint(1, 4)
-        return
+def apply_llm_action(character, llm_result, world_tick):
+    world = get_world()
+    action = (llm_result or {}).get("action", {}) or {}
+    name = action.get("name", "wait")
+    intention = str(action.get("intention", "") or "")
+    pre_delay = max(1, min(15, int(action.get("pre_action_delay", 2))))
+    duration_seconds = max(1, min(60, int(action.get("duration_seconds", 4))))
+    post_delay = max(1, min(15, int(action.get("post_action_delay", 2))))
+    utterance = str(action.get("utterance", "") or "")
+    target_character_id = str(action.get("target_character_id", "") or "")
+    target_tile = action.get("target_tile") or {}
 
-    character.state.roam_tiles_remaining = max(0, character.state.roam_tiles_remaining - 1)
-    character.state.dwell_ticks_remaining = random.randint(1, 2)
-    character.state.mood = "roaming"
+    character.state.current_action_name = name
+    character.state.current_intention = intention
+    character.state.action_phase = "pre"
+    character.state.action_delay_ticks_remaining = secs_to_ticks(world, pre_delay)
+    character.state.pending_action = {
+        "name": name,
+        "target_character_id": target_character_id,
+        "target_tile": target_tile,
+        "utterance": utterance,
+        "duration_seconds": duration_seconds,
+        "post_action_delay": post_delay,
+    }
+    if utterance:
+        maybe_set_speech(character, world_tick, utterance)
+
+
+def progress_action(character, world_tick):
+    pending = getattr(character.state, "pending_action", None)
+    if not pending:
+        return False
+
+    if character.state.action_delay_ticks_remaining > 0:
+        character.state.action_delay_ticks_remaining -= 1
+        return True
+
+    if character.state.action_phase == "pre":
+        character.state.action_phase = "active"
+        character.state.action_delay_ticks_remaining = secs_to_ticks(get_world(), int(pending.get("duration_seconds", 4)))
+        character.state.mood = f"doing:{pending.get('name', 'wait')}"
+
+        name = pending.get("name")
+        if name == "speak" and pending.get("target_character_id"):
+            face_target(character, pending["target_character_id"])
+            target = TAGGED_CHARACTERS.get(pending["target_character_id"])
+            if target:
+                target.state.current_action_name = "speak"
+                target.state.current_intention = f"talking_with:{character.profile.id}"
+                target.state.action_phase = "active"
+                target.state.action_delay_ticks_remaining = max(
+                    getattr(target.state, "action_delay_ticks_remaining", 0),
+                    secs_to_ticks(get_world(), int(pending.get("duration_seconds", 4)))
+                )
+                maybe_set_speech(target, world_tick, f"(listening to {character.profile.name})")
+        elif name == "move":
+            step_toward(character, pending.get("target_tile") or {}, exclude_id=character.profile.id)
+        return True
+
+    if character.state.action_phase == "active":
+        character.state.action_phase = "post"
+        character.state.action_delay_ticks_remaining = secs_to_ticks(get_world(), int(pending.get("post_action_delay", 2)))
+        return True
+
+    if character.state.action_phase == "post":
+        character.state.action_phase = "idle"
+        character.state.current_action_name = ""
+        character.state.current_intention = ""
+        character.state.pending_action = None
+        return False
+
+    return False
+
 
 async def tagged_sim_loop():
     seed_default_tagged_characters()
@@ -136,70 +171,24 @@ async def tagged_sim_loop():
         if world["calendar"]["minute_of_day"] >= 1440:
             world["calendar"]["minute_of_day"] = 0
             world["calendar"]["day"] += 1
+
         for char_id, character in TAGGED_CHARACTERS.items():
             tick_base_state(character)
             clear_expired_speech(character, world["tick"])
 
-            if character.state.current_activity is not None:
-                tick_current_activity(character, world["tick"])
-                activity = character.state.current_activity
-                if activity:
-                    character.state.mood = "busy"
-                    maybe_context_speech(character, world["tick"], activity.tag, chance=0.35 if activity.tag in {"conversation", "phone_call"} else 0.15)
-                else:
-                    character.state.mood = "idle"
-                    roll_idle_dice(character)
-                    choose_and_store_roam_target(character)
-                    character.state.dwell_ticks_remaining = random.randint(1, 3)
+            if progress_action(character, world["tick"]):
                 continue
 
-            if character.state.roam_tiles_remaining > 0:
-                roam_one_step(world, character)
-                if character.state.mood in {"pausing", "idle_pause", "walking_pause"}:
-                    maybe_context_speech(character, world["tick"], None, chance=0.12)
-                continue
-
-            # pause at idle points before next decision/roll
-            if character.state.dwell_ticks_remaining > 0:
-                character.state.dwell_ticks_remaining -= 1
-                character.state.mood = "idle_pause"
-                maybe_context_speech(character, world["tick"], None, chance=0.2)
-                continue
-
-            d1, d2 = roll_idle_dice(character)
-            choose_and_store_roam_target(character)
-
-            available_requirements = requirements_for_character(character)
-            prompt_payload = build_prompt_payload(character, available_requirements, world["tick"])
-
-            # Build dict view for LLM and ask only on configured cadence.
             llm_result = maybe_run_decision_llm(character.model_dump(), world)
-            if llm_result and maybe_apply_llm_result(character, llm_result, world["tick"]):
-                character.memory.append({"tick": world["tick"], "idle_roll": [d1, d2], "prompt_payload": prompt_payload, "llm_result": llm_result, "roam_target": character.state.roam_target})
-                character.memory = character.memory[-25:]
-                continue
-
-            decision = choose_action_v2(character, available_requirements, world["tick"])
-            character.memory.append({"tick": world["tick"], "idle_roll": [d1, d2], "prompt_payload": prompt_payload, "decision": decision, "roam_target": character.state.roam_target})
-            character.memory = character.memory[-25:]
-
-            ok, reason = validate_decision_action(character, decision, available_requirements)
-            if not ok:
-                character.memory.append({"tick": world["tick"], "decision_rejected": reason})
-                roam_one_step(world, character)
+            if llm_result:
+                character.memory.append({"tick": world["tick"], "llm_result": llm_result})
+                character.memory = character.memory[-40:]
+                apply_llm_action(character, llm_result, world["tick"])
             else:
-                action = decision["action"]
-                if action["type"] == "engage_activity":
-                    start_activity(character, world["tick"], action["activity_type"], action["tag"], float(action["hours"]), [], action.get("contacts", []))
-                    character.state.mood = "busy"
-                    character.state.roam_target = None
-                    character.state.roam_path = []
-                    maybe_set_speech(character, world["tick"], pick_line(character, action["tag"]))
-                elif action["type"] == "interrupt_activity":
-                    interrupt_activity(character, action.get("reason", "unknown"))
-                elif action["type"] == "wander":
-                    roam_one_step(world, character)
+                character.state.current_action_name = "wait"
+                character.state.current_intention = "between llm turns"
+                character.state.mood = "waiting"
 
         sync_tagged_characters_into_world()
         await manager.broadcast(world)
-        await asyncio.sleep(1.0)
+        await asyncio.sleep(world.get("config", {}).get("tick_rate", 1.0))

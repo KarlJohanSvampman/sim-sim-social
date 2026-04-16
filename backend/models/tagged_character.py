@@ -114,6 +114,11 @@ class CharacterStateV2(BaseModel):
     move_cooldown_ticks: int = Field(default=0, ge=0)
     spoken_text: str = ""
     speech_expires_tick: int = Field(default=0, ge=0)
+    current_intention: str = ""
+    current_action_name: str = ""
+    action_delay_ticks_remaining: int = Field(default=0, ge=0)
+    action_phase: str = "idle"
+    pending_action: dict | None = None
 
 class CharacterV2(BaseModel):
     profile: CharacterProfileV2
