@@ -9,11 +9,12 @@ ACTIVITY_REQUIREMENTS = {
     ("recreative", "listen_radio"): {"objects": {"radio"}, "tile_types": set(), "room_tags": set()},
     ("recreative", "read_for_fun"): {"objects": {"book"}, "tile_types": set(), "room_tags": set()},
     ("recreative", "exercise"): {"objects": set(), "tile_types": {"yard", "gym_floor"}, "room_tags": {"yard", "gym"}},
-    ("recreative", "stress_relief"): {"objects": {"tv", "radio", "book"}, "tile_types": set(), "room_tags": {"living_room"}},
+    ("recreative", "stress_relief"): {"objects": set(), "tile_types": set(), "room_tags": {"living_room", "yard", "bedroom"}},
     ("social", "phone_call"): {"objects": {"smartphone", "computer"}, "tile_types": set(), "room_tags": set()},
     ("social", "social_media"): {"objects": {"smartphone", "computer"}, "tile_types": set(), "room_tags": set()},
     ("study", "general_study"): {"objects": {"book", "computer"}, "tile_types": set(), "room_tags": {"study", "office"}},
     ("practice", "cooking"): {"objects": {"stove", "food"}, "tile_types": set(), "room_tags": {"kitchen"}},
+    ("practice", "conversation"): {"objects": set(), "tile_types": set(), "room_tags": {"living_room", "yard", "kitchen"}},
     ("practice", "work"): {"objects": {"computer", "car"}, "tile_types": set(), "room_tags": {"office", "garage"}},
 }
 

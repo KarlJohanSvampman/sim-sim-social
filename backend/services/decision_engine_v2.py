@@ -6,7 +6,7 @@ from services.activity_engine import can_start_activity
 from services.activity_requirements import is_activity_available
 
 PROMPT_PATH = Path(__file__).resolve().parents[1] / "prompts" / "decision_prompt_v2.txt"
-TRIGGER_DOUBLES = {(1,1), (4,4), (6,6)}
+TRIGGER_DOUBLES = {(1,1), (2,2), (3,3), (4,4), (5,5), (6,6)}
 
 def load_prompt_contract() -> str:
     try:
@@ -39,30 +39,37 @@ def choose_activity_action(character: CharacterV2, available_requirements: set[s
     needs = state.needs
     candidate_actions = []
 
-    if needs.sleep >= 80:
+    if needs.bladder >= 70:
+        candidate_actions.append({"type": "engage_activity", "activity_type": "recreative", "tag": "hygiene", "hours": 0.2})
+    if needs.sleep >= 70:
         candidate_actions.append({"type": "engage_activity", "activity_type": "recreative", "tag": "sleep", "hours": 0.8})
-    if needs.hunger >= 75:
+    if needs.hunger >= 60:
         candidate_actions.append({"type": "engage_activity", "activity_type": "recreative", "tag": "eat", "hours": 0.3})
-    if needs.thirst >= 75 or state.stress >= 70:
+    if needs.thirst >= 60 or state.stress >= 55:
         candidate_actions.append({"type": "engage_activity", "activity_type": "recreative", "tag": "stress_relief", "hours": 0.3})
 
-    eq_skew = character.profile.intelligence_spectrum > 25
-    iq_skew = character.profile.intelligence_spectrum < -25
+    eq_skew = character.profile.intelligence_spectrum > 10
+    iq_skew = character.profile.intelligence_spectrum < -10
 
     if eq_skew and character.profile.contacts:
         top_contact = max(character.profile.contacts, key=lambda c: c.hours)
         candidate_actions.append({"type": "engage_activity", "activity_type": "social", "tag": "phone_call", "hours": 0.4, "contacts": [top_contact.character_id]})
 
+    # Let "conversation" work as a practice/social-like activity more often
+    top_activity = _top_interest(character, "Activity") or "general_practice"
+    if top_activity == "conversation":
+        candidate_actions.append({"type": "engage_activity", "activity_type": "practice", "tag": "conversation", "hours": 0.4})
+
     if iq_skew:
-        candidate_actions.append({"type": "engage_activity", "activity_type": "study", "tag": _top_interest(character, "Knowledge") or "general_study", "hours": 0.6})
+        candidate_actions.append({"type": "engage_activity", "activity_type": "study", "tag": _top_interest(character, "Knowledge") or "general_study", "hours": 0.5})
     else:
-        candidate_actions.append({"type": "engage_activity", "activity_type": "practice", "tag": _top_interest(character, "Activity") or "general_practice", "hours": 0.6})
+        candidate_actions.append({"type": "engage_activity", "activity_type": "practice", "tag": top_activity, "hours": 0.5})
 
     for action in candidate_actions:
         available, discovered = is_activity_available(character, action["activity_type"], action["tag"])
         if not available:
             continue
-        ok, reason = validate_decision_action(character, {"action": action}, available_requirements | discovered)
+        ok, _ = validate_decision_action(character, {"action": action}, available_requirements | discovered)
         if ok:
             return {"thought": f"Starting {action['activity_type']}:{action['tag']} because conditions are satisfied.", "action": action}
 
@@ -78,7 +85,8 @@ def choose_action_v2(character: CharacterV2, available_requirements: set[str], c
         return {"thought": "Continuing the current activity.", "action": {"type": "continue_activity"}}
 
     dice = getattr(character.state, "last_idle_roll", None)
-    if dice and tuple(dice) in TRIGGER_DOUBLES:
+    high_need = max(needs.hunger, needs.thirst, needs.bladder, needs.sleep) >= 75
+    if (dice and tuple(dice) in TRIGGER_DOUBLES) or high_need:
         return choose_activity_action(character, available_requirements, current_tick)
 
     return {"thought": "No activity trigger was rolled, so keep roaming until the next stop.", "action": {"type": "wander"}}

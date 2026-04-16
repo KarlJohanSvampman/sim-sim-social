@@ -5,24 +5,25 @@ export default function DebugPage() {
   const [status, setStatus] = useState("Loading...");
 
   useEffect(() => {
-    fetch("http://localhost:8000/world")
-      .then((r) => {
+    const load = async () => {
+      try {
+        const r = await fetch("http://localhost:8000/world");
         if (!r.ok) throw new Error(`GET /world failed: ${r.status}`);
-        return r.json();
-      })
-      .then((data) => {
+        const data = await r.json();
         setWorld(data);
         setStatus("Loaded");
-      })
-      .catch((err) => {
+      } catch (err) {
         console.error(err);
         setStatus("Load failed");
-      });
+      }
+    };
+    load();
   }, []);
 
   return (
     <div style={{padding:16, color:"#fff", background:"#111", minHeight:"calc(100vh - 56px)"}}>
       <h2>Debug</h2>
+      <div style={{marginBottom:8, opacity:0.8}}>Tagged characters appear under world.tagged_characters when active.</div>
       <div style={{marginBottom:8, opacity:0.8}}>Status: {status}</div>
       <pre style={{whiteSpace:"pre-wrap"}}>{world ? JSON.stringify(world, null, 2) : "No world data."}</pre>
     </div>

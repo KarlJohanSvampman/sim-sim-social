@@ -19,23 +19,23 @@ export default function ObjectManager() {
 }`);
   const [status, setStatus] = useState("Loading...");
 
-  const load = () =>
-    fetch("http://localhost:8000/editor/objects")
-      .then((r) => {
-        if (!r.ok) throw new Error(`GET /editor/objects failed: ${r.status}`);
-        return r.json();
-      })
-      .then((data) => {
-        setItems(data);
-        setStatus("Loaded");
-      })
-      .catch((err) => {
-        console.error(err);
-        setItems([]);
-        setStatus("Load failed");
-      });
+  const load = async () => {
+    try {
+      const r = await fetch("http://localhost:8000/editor/objects");
+      if (!r.ok) throw new Error(`GET /editor/objects failed: ${r.status}`);
+      const data = await r.json();
+      setItems(data);
+      setStatus("Loaded");
+    } catch (err) {
+      console.error(err);
+      setItems([]);
+      setStatus("Load failed");
+    }
+  };
 
-  useEffect(load, []);
+  useEffect(() => {
+    load();
+  }, []);
 
   const save = async () => {
     try {
@@ -45,7 +45,7 @@ export default function ObjectManager() {
         body: draft
       });
       if (!res.ok) throw new Error("Save failed");
-      load();
+      await load();
     } catch (e) {
       console.error(e);
       setStatus("Save failed");
@@ -56,7 +56,7 @@ export default function ObjectManager() {
     try {
       const res = await fetch(`http://localhost:8000/editor/objects/${id}`, { method: "DELETE" });
       if (!res.ok) throw new Error("Delete failed");
-      load();
+      await load();
     } catch (e) {
       console.error(e);
       setStatus("Delete failed");

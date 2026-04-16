@@ -69,7 +69,9 @@ function Character({ c }) {
       <Html position={[0, 1.0, 0]} center>
         <div style={{ background: "#fff", padding: "4px 6px", borderRadius: 6, border: "1px solid #999", fontSize: 12, maxWidth: 220 }}>
           <strong>{c.name}</strong><br />
-          <span>💭 {c.thoughts || "..."}</span><br />
+          <span>💭 {c.thoughts || "..."} </span><br />
+          {c.spoken_text ? <div style={{marginTop:4, background:"#fef3c7", border:"1px solid #f59e0b", padding:"4px 6px", borderRadius:8}}>🗨️ {c.spoken_text}</div> : null}
+
           <small>{app.age ?? "?"} · {app.sex || "unknown"} · {app.body_type || "?"}</small>
         </div>
       </Html>
@@ -196,7 +198,7 @@ function MapPage() {
             <Tile key={t.x + "-" + t.y} tile={t} selected={selectedTile && selectedTile.x === t.x && selectedTile.y === t.y} onSelect={setSelectedTile} />
           ))}
           {Object.values(world.characters || {}).map((c) => <Character key={c.id} c={c} />)}
-          {Object.values(world.tagged_characters || {}).map((c) => <Character key={c.profile.id} c={{ id: c.profile.id, name: c.profile.name, position: c.position, thoughts: c.state.current_activity ? `${c.state.current_activity.activity_type}:${c.state.current_activity.tag}` : c.state.mood, needs: { hunger: c.state.needs.hunger, thirst: c.state.needs.thirst, fatigue: c.state.fatigue }, appearance_summary: { age: c.profile.age, sex: c.profile.sex, body_type: c.profile.appearance_tags?.[0]?.tag || "unknown" } }} />)}
+          {Object.values(world.tagged_characters || {}).map((c) => <Character key={c.profile.id} c={{ id: c.profile.id, name: c.profile.name, position: c.position, thoughts: c.state.current_activity ? `${c.state.current_activity.activity_type}:${c.state.current_activity.tag}` : c.state.mood, needs: { hunger: c.state.needs.hunger, thirst: c.state.needs.thirst, fatigue: c.state.fatigue }, spoken_text: c.state.spoken_text, appearance_summary: { age: c.profile.age, sex: c.profile.sex, body_type: c.profile.appearance_tags?.[0]?.tag || "unknown" } }} />)}
         </Canvas>
       </div>
       <div style={{ background: "#111827", color: "#fff", padding: 16, overflow: "auto" }}>
@@ -218,13 +220,7 @@ function MapPage() {
 }
 
 function CreatorPage() {
-  return (
-    <div style={{padding:16, color:"#fff", background:"#111", minHeight:"calc(100vh - 56px)"}}>
-      <h2>Character Creator</h2>
-      <div>This tab is available and no longer crashes navigation.</div>
-      <div style={{marginTop:8, opacity:0.8}}>You can merge the full creator form back into this page next.</div>
-    </div>
-  );
+  return <TaggedProfileEditor />;
 }
 
 export default function App() {
