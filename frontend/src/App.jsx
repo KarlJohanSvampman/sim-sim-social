@@ -231,7 +231,7 @@ export default function App() {
       case "map":
         return <MapPage />;
       case "creator":
-        return <CreatorPage />;
+        return <TaggedProfileEditor />;
       case "tagged":
         return <TaggedProfileEditor />;
       case "objects":

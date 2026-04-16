@@ -1,4 +1,5 @@
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware, WebSocket, WebSocketDisconnect
 import asyncio
 from routes.world import router as world_router
 from routes.objects import router as object_router
@@ -10,6 +11,18 @@ from services.live_sim import live_sim_loop
 from services.tagged_sim_loop import tagged_sim_loop
 
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 app.include_router(world_router)
 app.include_router(object_router)
 app.include_router(editor_router)
