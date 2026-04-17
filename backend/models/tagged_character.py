@@ -83,6 +83,19 @@ class CurrentActivity(BaseModel):
             raise ValueError("tick_size_hours must be 0.1")
         return v
 
+class RelationshipMeter(BaseModel):
+    love: float = Field(default=0.0, ge=-100.0, le=100.0)
+    hate: float = Field(default=0.0, ge=0.0, le=100.0)
+    trust: float = Field(default=0.0, ge=-100.0, le=100.0)
+    fear: float = Field(default=0.0, ge=0.0, le=100.0)
+
+class GrudgeMemory(BaseModel):
+    target_character_id: str = Field(min_length=1)
+    reason: str = ""
+    intensity: float = Field(default=10.0, ge=0.0, le=100.0)
+    created_tick: int = Field(default=0, ge=0)
+    decay_rate: float = Field(default=0.25, ge=0.0, le=5.0)
+
 class CharacterProfileV2(BaseModel):
     id: str = Field(min_length=1)
     name: str = Field(min_length=1)
@@ -110,6 +123,9 @@ class CharacterStateV2(BaseModel):
     escalation_level: int = Field(default=0, ge=0, le=5)
     volatility: float = Field(default=0.5, ge=0.0, le=1.0)
     aggression_bias: float = Field(default=0.2, ge=0.0, le=1.0)
+    drama_bias: float = Field(default=0.6, ge=0.0, le=1.0)
+    authority_sensitivity: float = Field(default=0.3, ge=0.0, le=1.0)
+    insecurity: float = Field(default=0.4, ge=0.0, le=1.0)
     current_activity: CurrentActivity | None = None
     roam_tiles_remaining: int = Field(default=0, ge=0)
     last_idle_roll: list[int] = Field(default_factory=list)
@@ -130,6 +146,10 @@ class CharacterStateV2(BaseModel):
     last_conversation_tick: int = Field(default=0, ge=0)
     conversation_topic: str = ""
     affinity: dict[str, float] = Field(default_factory=dict)
+    relationship_meters: dict[str, RelationshipMeter] = Field(default_factory=dict)
+    grudges: list[GrudgeMemory] = Field(default_factory=list)
+    avoid_character_ids: list[str] = Field(default_factory=list)
+    feared_character_ids: list[str] = Field(default_factory=list)
 
 class CharacterV2(BaseModel):
     profile: CharacterProfileV2
