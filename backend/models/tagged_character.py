@@ -127,3 +127,4 @@ class CharacterV2(BaseModel):
     inventory_item_ids: list[str] = Field(default_factory=list)
     equipped_item_ids: list[str] = Field(default_factory=list)
     memory: list[dict[str, Any]] = Field(default_factory=list)
+    conversation_history: list[dict[str, Any]] = Field(default_factory=list)
