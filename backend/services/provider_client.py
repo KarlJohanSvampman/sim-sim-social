@@ -7,7 +7,7 @@ def _resolve_env_key(env_name: str) -> str:
 
 
 def _render_auth(template: str, api_key: str) -> str:
-    return (template or "Bearer {{api_key}}").replace("{{api_key}}", api_key)
+    return (template or "Bearer {{api_key}}"").replace("{{api_key}}", api_key)
 
 
 def _walk_path(data, path: str):
@@ -48,11 +48,16 @@ def call_chat_provider(provider_cfg: dict, messages: list[dict]) -> dict:
     auth_header_name = provider_cfg.get("auth_header_name", "Authorization")
     auth_template = provider_cfg.get("auth_header_template", "Bearer {{api_key}}")
     headers = {"Content-Type": "application/json"}
+
     if provider_cfg.get("api_key_env"):
         if not api_key:
             raise RuntimeError(f"Missing API key in env var: {provider_cfg.get('api_key_env', '')}")
         auth_header_value = _render_auth(auth_template, api_key)
         headers[auth_header_name] = auth_header_value
+
+    # Ollama often rejects requests from Docker hostnames unless the Host header matches localhost.
+    if "host.docker.internal:11434" in base_url:
+        headers["Host"] = "localhost:11434"
 
     if provider_kind in {"openai_compatible", "generic_http"}:
         path = provider_cfg.get("chat_path", "chat/completions").lstrip("/")
@@ -67,7 +72,7 @@ def call_chat_provider(provider_cfg: dict, messages: list[dict]) -> dict:
             messages=messages
         )
         url = base_url + path
-        with httpx.Client(timeout=60.0) as client:
+        with httpx.Client(timeout=10.0) as client:
             resp = client.post(url, headers=headers, json=body)
             resp.raise_for_status()
             data = resp.json()
