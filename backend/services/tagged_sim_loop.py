@@ -36,6 +36,16 @@ def clear_expired_speech(character, world_tick):
         character.state.speech_expires_tick = 0
 
 
+def store_conversation(speaker, listener, text, world_tick):
+    if not text:
+        return
+    entry = {"tick": world_tick, "from": speaker.profile.id, "to": listener.profile.id, "text": text}
+    speaker.conversation_history.append(entry)
+    listener.conversation_history.append(entry)
+    speaker.conversation_history = speaker.conversation_history[-20:]
+    listener.conversation_history = listener.conversation_history[-20:]
+
+
 def secs_to_ticks(world, seconds: int) -> int:
     tick_rate = float(world.get("config", {}).get("tick_rate", 1.0))
     if tick_rate <= 0:
@@ -111,8 +121,14 @@ def apply_llm_action(character, llm_result, world_tick):
         "duration_seconds": duration_seconds,
         "post_action_delay": post_delay,
     }
+
     if utterance:
         maybe_set_speech(character, world_tick, utterance)
+
+    if name == "speak" and target_character_id:
+        target = TAGGED_CHARACTERS.get(target_character_id)
+        if target:
+            store_conversation(character, target, utterance, world_tick)
 
 
 def progress_action(character, world_tick):
@@ -166,11 +182,6 @@ async def tagged_sim_loop():
     world = get_world()
     while True:
         world["tick"] = world.get("tick", 0) + 1
-        world.setdefault("calendar", {"year": 2026, "month": 4, "day": 16, "minute_of_day": 480})
-        world["calendar"]["minute_of_day"] += 10
-        if world["calendar"]["minute_of_day"] >= 1440:
-            world["calendar"]["minute_of_day"] = 0
-            world["calendar"]["day"] += 1
 
         for char_id, character in TAGGED_CHARACTERS.items():
             tick_base_state(character)
@@ -184,10 +195,6 @@ async def tagged_sim_loop():
                 character.memory.append({"tick": world["tick"], "llm_result": llm_result})
                 character.memory = character.memory[-40:]
                 apply_llm_action(character, llm_result, world["tick"])
-            else:
-                character.state.current_action_name = "wait"
-                character.state.current_intention = "between llm turns"
-                character.state.mood = "waiting"
 
         sync_tagged_characters_into_world()
         await manager.broadcast(world)
