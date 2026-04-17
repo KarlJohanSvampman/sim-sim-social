@@ -7,7 +7,7 @@ def _resolve_env_key(env_name: str) -> str:
 
 
 def _render_auth(template: str, api_key: str) -> str:
-    return (template or "Bearer {{api_key}}"").replace("{{api_key}}", api_key)
+    return (template or "Bearer {{api_key}}").replace("{{api_key}}", api_key)
 
 
 def _walk_path(data, path: str):
@@ -55,7 +55,6 @@ def call_chat_provider(provider_cfg: dict, messages: list[dict]) -> dict:
         auth_header_value = _render_auth(auth_template, api_key)
         headers[auth_header_name] = auth_header_value
 
-    # Ollama often rejects requests from Docker hostnames unless the Host header matches localhost.
     if "host.docker.internal:11434" in base_url:
         headers["Host"] = "localhost:11434"
 
