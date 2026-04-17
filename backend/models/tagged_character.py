@@ -101,10 +101,15 @@ class CharacterProfileV2(BaseModel):
 class CharacterStateV2(BaseModel):
     needs: NeedState = Field(default_factory=NeedState)
     mood: str = "neutral"
+    action_mood: str = "neutral"
     stress: float = Field(default=0.0, ge=0.0, le=100.0)
     focus: float = Field(default=50.0, ge=0.0, le=100.0)
     fatigue: float = Field(default=0.0, ge=0.0, le=100.0)
     intoxication: float = Field(default=0.0, ge=0.0, le=100.0)
+    emotional_temperature: float = Field(default=20.0, ge=0.0, le=100.0)
+    escalation_level: int = Field(default=0, ge=0, le=5)
+    volatility: float = Field(default=0.5, ge=0.0, le=1.0)
+    aggression_bias: float = Field(default=0.2, ge=0.0, le=1.0)
     current_activity: CurrentActivity | None = None
     roam_tiles_remaining: int = Field(default=0, ge=0)
     last_idle_roll: list[int] = Field(default_factory=list)
@@ -119,6 +124,12 @@ class CharacterStateV2(BaseModel):
     action_delay_ticks_remaining: int = Field(default=0, ge=0)
     action_phase: str = "idle"
     pending_action: dict | None = None
+    conversation_partner_id: str = ""
+    awaiting_reply_from_id: str = ""
+    conversation_turns_remaining: int = Field(default=0, ge=0)
+    last_conversation_tick: int = Field(default=0, ge=0)
+    conversation_topic: str = ""
+    affinity: dict[str, float] = Field(default_factory=dict)
 
 class CharacterV2(BaseModel):
     profile: CharacterProfileV2
