@@ -1,5 +1,4 @@
-from fastapi import FastAPI
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Body
 from fastapi.middleware.cors import CORSMiddleware
 import asyncio
 from routes.world import router as world_router
@@ -45,8 +44,6 @@ async def ws_endpoint(ws: WebSocket):
     except WebSocketDisconnect:
         manager.disconnect(cid)
 
-from fastapi import Body
-
 @app.get("/config")
 def get_config():
     from services.state import get_world
@@ -56,9 +53,16 @@ def get_config():
 def set_config(cfg: dict = Body(...)):
     from services.state import get_world
     world = get_world()
-    world["config"] = cfg
-    return cfg
+    existing = world.get("config", {}) or {}
+    incoming_provider = cfg.get("llm_provider")
+    existing_provider = existing.get("llm_provider", {}) or {}
 
+    merged = {**existing, **cfg}
+    if incoming_provider is not None:
+        merged["llm_provider"] = {**existing_provider, **incoming_provider}
+
+    world["config"] = merged
+    return world["config"]
 
 @app.get("/llm-logs")
 def get_llm_logs():
