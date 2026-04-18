@@ -1,6 +1,7 @@
 from models.tagged_character import CharacterV2, CharacterProfileV2, CharacterStateV2, NeedState, Tag, InterestTag, ContactEntry
 from services.tagged_profile_store import TAGGED_CHARACTERS
 
+
 def seed_default_tagged_characters():
     if TAGGED_CHARACTERS:
         return
@@ -12,7 +13,11 @@ def seed_default_tagged_characters():
             age=30,
             sex="female",
             intelligence_spectrum=-35,
-            identity_tags=[Tag(category="temperament", tag="curious"), Tag(category="social_style", tag="reserved")],
+            identity_tags=[
+                Tag(category="temperament", tag="curious"),
+                Tag(category="social_style", tag="reserved"),
+                Tag(category="conflict_style", tag="dramatic"),
+            ],
             appearance_tags=[Tag(category="style", tag="casual"), Tag(category="build", tag="average")],
             interests=[InterestTag(category="Knowledge", tag="psychology", rank=1), InterestTag(category="Activity", tag="cooking", rank=2)],
             activities=[],
@@ -28,6 +33,13 @@ def seed_default_tagged_characters():
             focus=62,
             fatigue=20,
             intoxication=0,
+            emotional_temperature=28,
+            volatility=0.74,
+            aggression_bias=0.32,
+            drama_bias=0.82,
+            authority_sensitivity=0.61,
+            insecurity=0.66,
+            affinity={"tag_bryn": 12.0},
             current_activity=None,
             roam_tiles_remaining=0,
             last_idle_roll=[],
@@ -47,6 +59,7 @@ def seed_default_tagged_characters():
         inventory_item_ids=[],
         equipped_item_ids=[],
         memory=[],
+        conversation_history=[],
     )
 
     char2 = CharacterV2(
@@ -56,7 +69,11 @@ def seed_default_tagged_characters():
             age=34,
             sex="male",
             intelligence_spectrum=40,
-            identity_tags=[Tag(category="social_style", tag="warm"), Tag(category="temperament", tag="observant")],
+            identity_tags=[
+                Tag(category="social_style", tag="warm"),
+                Tag(category="temperament", tag="observant"),
+                Tag(category="conflict_style", tag="passive_aggressive"),
+            ],
             appearance_tags=[Tag(category="style", tag="neat"), Tag(category="build", tag="average")],
             interests=[InterestTag(category="Activity", tag="conversation", rank=1), InterestTag(category="Knowledge", tag="history", rank=2)],
             activities=[],
@@ -72,6 +89,13 @@ def seed_default_tagged_characters():
             focus=58,
             fatigue=15,
             intoxication=0,
+            emotional_temperature=20,
+            volatility=0.46,
+            aggression_bias=0.18,
+            drama_bias=0.44,
+            authority_sensitivity=0.28,
+            insecurity=0.37,
+            affinity={"tag_ada": 18.0},
             current_activity=None,
             roam_tiles_remaining=0,
             last_idle_roll=[],
@@ -91,6 +115,7 @@ def seed_default_tagged_characters():
         inventory_item_ids=[],
         equipped_item_ids=[],
         memory=[],
+        conversation_history=[],
     )
 
     TAGGED_CHARACTERS[char1.profile.id] = char1
