@@ -25,6 +25,7 @@ export default function TopNav({ page, setPage }) {
       {btn("items", "Items")}
       {btn("actions", "Actions")}
       {btn("activities", "Activities")}
+      {btn("config", "Config")}
       {btn("tiletypes", "Tile Types")}
       {btn("debug", "Debug")}
       {btn("llm_inspector", "LLM Inspector")}
