@@ -16,6 +16,9 @@ def _append_log(entry: dict):
 
 def build_decision_prompt(character: dict, world: dict) -> str:
     me = character.get("profile", {}).get("id")
+    awaiting = character.get("state", {}).get("awaiting_reply_from_id", "")
+    partner = character.get("state", {}).get("conversation_partner_id", "")
+
     others = []
     for c in (world.get("tagged_characters", {}) or {}).values():
         pid = c.get("profile", {}).get("id")
@@ -25,6 +28,7 @@ def build_decision_prompt(character: dict, world: dict) -> str:
                 "name": c.get("profile", {}).get("name", pid),
                 "position": c.get("position", {}),
                 "mood": c.get("state", {}).get("mood", "neutral"),
+                "spoken_text": c.get("state", {}).get("spoken_text", ""),
             })
 
     compact = {
@@ -33,9 +37,13 @@ def build_decision_prompt(character: dict, world: dict) -> str:
         "position": character.get("position", {}),
         "mood": character.get("state", {}).get("mood"),
         "current_action_name": character.get("state", {}).get("current_action_name", ""),
-        "conversation_partner_id": character.get("state", {}).get("conversation_partner_id", ""),
-        "awaiting_reply_from_id": character.get("state", {}).get("awaiting_reply_from_id", ""),
+        "conversation_partner_id": partner,
+        "awaiting_reply_from_id": awaiting,
     }
+
+    reply_rule = ""
+    if awaiting:
+        reply_rule = f"You are being spoken to by {awaiting}. Reply to that character now. Prefer speak or yell, and include non-empty utterance text. Set target_character_id to {awaiting}."
 
     return f"""
 Return JSON only.
@@ -43,6 +51,7 @@ Choose exactly ONE action.
 Never choose speak or yell with an empty utterance.
 If you choose speak, yell, or gesture and another person is available, set target_character_id to one of the listed others, not yourself.
 If currently in conversation, prefer replying to the conversation partner.
+{reply_rule}
 
 Allowed actions: {", ".join(ALLOWED_ACTIONS)}
 
@@ -66,14 +75,16 @@ Others:
 
 
 async def maybe_run_decision_llm(character: dict, world: dict):
+    prompt = build_decision_prompt(character, world)
+
     async def job():
         return await call_chat_provider_async(world.get("config", {}).get("llm_provider", {}), [
-            {"role": "system", "content": "Return valid JSON only. Choose one action. No empty speech."},
-            {"role": "user", "content": build_decision_prompt(character, world)},
+            {"role": "system", "content": "Return valid JSON only. Choose one action. No empty speech. When awaiting_reply_from_id is set, reply to that character."},
+            {"role": "user", "content": prompt},
         ])
 
     result = await enqueue_llm_call(job)
-    _append_log({"prompt": build_decision_prompt(character, world), "provider_result": result})
+    _append_log({"prompt": prompt, "provider_result": result})
 
     try:
         if result.get("text"):
@@ -85,6 +96,7 @@ async def maybe_run_decision_llm(character: dict, world: dict):
             if act.get("name") in ["speak", "yell"] and not (act.get("utterance") or "").strip():
                 act["name"] = "wait"
                 act["utterance"] = ""
+                act["target_character_id"] = ""
             return data
     except Exception:
         pass
