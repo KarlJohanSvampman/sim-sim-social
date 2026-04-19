@@ -150,6 +150,7 @@ class CharacterStateV2(BaseModel):
     grudges: list[GrudgeMemory] = Field(default_factory=list)
     avoid_character_ids: list[str] = Field(default_factory=list)
     feared_character_ids: list[str] = Field(default_factory=list)
+    facing: dict[str, float] = Field(default_factory=lambda: {"x": 0.0, "y": 1.0})
 
 class CharacterV2(BaseModel):
     profile: CharacterProfileV2
