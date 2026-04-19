@@ -14,34 +14,37 @@ def _append_log(entry: dict):
 
 
 def build_decision_prompt(character: dict, world: dict) -> str:
-    return """
+    others = [c["profile"]["id"] for c in world.get("tagged_characters", {}).values() if c["profile"]["id"] != character.get("profile", {}).get("id")]
+
+    return f"""
 Return JSON only.
 Choose exactly ONE action.
 
-Allowed actions:
+Rules:
+- NEVER choose speak or yell with an empty utterance.
+- Prefer interacting with other characters instead of yourself.
+- If others exist: {others}
+
+Actions:
 wait, move, speak, yell, gesture, leave, smash, observe, relax, study
 
 Schema:
-{
+{{
   "thought": "...",
-  "action": {
+  "action": {{
     "name": "wait|move|speak|yell|gesture|leave|smash|observe|relax|study",
-    "intention": "...",
     "target_character_id": "",
-    "target_tile": {"x":0,"y":0},
+    "target_tile": {{"x":0,"y":0}},
     "utterance": ""
-  }
-}
+  }}
+}}
 """
 
 
-async def maybe_run_decision_llm(character: dict, world: dict, now_ts=None, force=False):
-    now_ts = now_ts or time.time()
-    state = character.setdefault("state", {})
-
+async def maybe_run_decision_llm(character: dict, world: dict):
     async def job():
         return await call_chat_provider_async(world.get("config", {}).get("llm_provider", {}), [
-            {"role": "system", "content": "Return JSON only. ONE action."},
+            {"role": "system", "content": "Return JSON only. No empty speech."},
             {"role": "user", "content": build_decision_prompt(character, world)},
         ])
 
@@ -52,9 +55,9 @@ async def maybe_run_decision_llm(character: dict, world: dict, now_ts=None, forc
     try:
         if result.get("text"):
             data = json.loads(result["text"])
-            name = data.get("action", {}).get("name", "wait")
-            if name not in ["wait","move","speak","yell","gesture","leave","smash","observe","relax","study"]:
-                data["action"]["name"] = "wait"
+            act = data.get("action", {})
+            if act.get("name") in ["speak","yell"] and not act.get("utterance"):
+                act["name"] = "wait"
             return data
     except Exception:
         pass
