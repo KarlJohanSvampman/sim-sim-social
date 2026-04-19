@@ -5,10 +5,10 @@ export default function ConfigPage() {
   const [status, setStatus] = useState("Loading...");
 
   useEffect(() => {
-    fetch("http://localhost:8000/world")
+    fetch("http://localhost:8000/config")
       .then(r => r.json())
       .then(data => {
-        setConfig(data.config || {});
+        setConfig(data || {});
         setStatus("Loaded");
       })
       .catch(() => setStatus("Load failed"));
@@ -24,13 +24,15 @@ export default function ConfigPage() {
 
   if (!config) return <div style={{padding:16,color:"#fff",background:"#111"}}>{status}</div>;
 
+  const provider = config.llm_provider || {};
+
   return (
-    <div style={{padding:16,color:"#fff",background:"#111",minHeight:"100%"}}>
+    <div style={{padding:16,color:"#fff",background:"#111",minHeight:"100vh"}}>
       <h2>Config</h2>
       <div>Status: {status}</div>
 
-      <div style={{marginTop:12}}>
-        <label>Tick Rate (seconds)</label>
+      <div>
+        <label>Tick Rate</label>
         <input
           type="number"
           value={config.tick_rate || 1}
@@ -39,7 +41,7 @@ export default function ConfigPage() {
       </div>
 
       <div>
-        <label>LLM Interval (seconds)</label>
+        <label>LLM Interval</label>
         <input
           type="number"
           value={config.llm_interval_seconds || 30}
@@ -47,20 +49,30 @@ export default function ConfigPage() {
         />
       </div>
 
+      <h3>LLM Provider</h3>
+
       <div>
-        <label>Provider Base URL</label>
+        <label>Base URL</label>
         <input
           style={{width:"100%"}}
-          value={config.provider_base_url || ""}
-          onChange={e => setConfig({...config, provider_base_url: e.target.value})}
+          value={provider.base_url || ""}
+          onChange={e => setConfig({...config, llm_provider: {...provider, base_url: e.target.value}})}
         />
       </div>
 
       <div>
         <label>Model</label>
         <input
-          value={config.model || ""}
-          onChange={e => setConfig({...config, model: e.target.value})}
+          value={provider.model || ""}
+          onChange={e => setConfig({...config, llm_provider: {...provider, model: e.target.value}})}
+        />
+      </div>
+
+      <div>
+        <label>Chat Path</label>
+        <input
+          value={provider.chat_path || "chat/completions"}
+          onChange={e => setConfig({...config, llm_provider: {...provider, chat_path: e.target.value}})}
         />
       </div>
 
