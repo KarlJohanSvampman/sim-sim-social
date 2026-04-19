@@ -18,12 +18,49 @@ def tick_base_state(character):
     character.state.needs.sleep = min(100.0, character.state.needs.sleep + 0.08)
     character.state.fatigue = min(100.0, character.state.fatigue + 0.04)
 
-    # emotional drift
     character.state.emotional_temperature = clamp(
         getattr(character.state, "emotional_temperature", 20.0) * 0.995,
         0,
         100,
     )
+
+
+def compute_social_layers(world):
+    chars = TAGGED_CHARACTERS
+
+    reputation = {}
+    alliances = []
+    rivalries = []
+
+    for cid, c in chars.items():
+        state = c.state
+
+        rep = {
+            "drama": state.drama_bias * state.emotional_temperature,
+            "danger": state.aggression_bias * state.emotional_temperature,
+            "stability": 100 - state.volatility * 100,
+        }
+        reputation[cid] = rep
+
+    ids = list(chars.keys())
+
+    for i in range(len(ids)):
+        for j in range(i + 1, len(ids)):
+            a = chars[ids[i]].state
+            b = chars[ids[j]].state
+
+            affinity_ab = a.affinity.get(ids[j], 0)
+            affinity_ba = b.affinity.get(ids[i], 0)
+
+            if affinity_ab > 25 and affinity_ba > 25:
+                alliances.append({"members": [ids[i], ids[j]], "strength": (affinity_ab + affinity_ba) / 2})
+
+            if affinity_ab < -10 or affinity_ba < -10 or ids[j] in getattr(a, "grudges", []) or ids[i] in getattr(b, "grudges", []):
+                rivalries.append({"members": [ids[i], ids[j]]})
+
+    world["reputation"] = reputation
+    world["alliances"] = alliances
+    world["rivalries"] = rivalries
 
 
 def update_emotions(character, action_name):
@@ -40,7 +77,6 @@ def update_emotions(character, action_name):
 
 
 def maybe_interrupt(character):
-    # simple interruption chance
     for other in TAGGED_CHARACTERS.values():
         if other.profile.id == character.profile.id:
             continue
@@ -64,7 +100,7 @@ def apply_llm_action(character, llm_result, world_tick):
 
     if utterance:
         character.state.spoken_text = utterance
-        character.state.speech_expires_tick = world_tick + 20
+        character.state.speech_expires_tick = world_tick + 30
 
     if target_character_id:
         character.state.conversation_partner_id = target_character_id
@@ -77,7 +113,6 @@ def progress_action(character, world_tick):
     if not pending:
         return False
 
-    # end instantly for now (AI drives pacing)
     character.state.pending_action = None
     return False
 
@@ -88,6 +123,8 @@ async def tagged_sim_loop():
 
     while True:
         world["tick"] += 1
+
+        compute_social_layers(world)
 
         for character in TAGGED_CHARACTERS.values():
             tick_base_state(character)
