@@ -151,6 +151,8 @@ class CharacterStateV2(BaseModel):
     avoid_character_ids: list[str] = Field(default_factory=list)
     feared_character_ids: list[str] = Field(default_factory=list)
     facing: dict[str, float] = Field(default_factory=lambda: {"x": 0.0, "y": 1.0})
+    last_llm_at: float = Field(default=0.0)
+    llm_in_flight: bool = Field(default=False)
 
 class CharacterV2(BaseModel):
     profile: CharacterProfileV2
