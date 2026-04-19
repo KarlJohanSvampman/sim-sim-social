@@ -11,6 +11,92 @@ def clamp(v, lo, hi):
     return max(lo, min(hi, v))
 
 
+def _tile_key(x, y):
+    return f"{x},{y}"
+
+
+def _get_tile(world, x, y):
+    return (world.get("grid", {}).get("tiles", {}) or {}).get(_tile_key(x, y))
+
+
+def _is_walkable(world, x, y):
+    tile = _get_tile(world, x, y)
+    return bool(tile) and not tile.get("blocks_movement", False)
+
+
+def _occupied_positions(exclude_id=None):
+    out = set()
+    for cid, c in TAGGED_CHARACTERS.items():
+        if cid == exclude_id:
+            continue
+        out.add((c.position["x"], c.position["y"]))
+    return out
+
+
+def _pick_fallback_tile(world, character, prefer_far=False):
+    occupied = _occupied_positions(character.profile.id)
+    cx, cy = character.position["x"], character.position["y"]
+    candidates = []
+    for key, tile in (world.get("grid", {}).get("tiles", {}) or {}).items():
+        x, y = tile["x"], tile["y"]
+        if tile.get("blocks_movement"):
+            continue
+        if (x, y) in occupied:
+            continue
+        dist = abs(x - cx) + abs(y - cy)
+        if dist == 0:
+            continue
+        candidates.append((dist, x, y))
+
+    if not candidates:
+        return {"x": cx, "y": cy}
+
+    candidates.sort(reverse=prefer_far)
+    _, x, y = candidates[0]
+    return {"x": x, "y": y}
+
+
+def _resolve_target_tile(world, character, action):
+    target = action.get("target_tile") or {}
+    tx = target.get("x")
+    ty = target.get("y")
+    if isinstance(tx, int) and isinstance(ty, int) and _is_walkable(world, tx, ty) and (tx, ty) not in _occupied_positions(character.profile.id):
+        return {"x": tx, "y": ty}
+
+    name = action.get("name", "")
+    if name == "leave":
+        return _pick_fallback_tile(world, character, prefer_far=True)
+    return _pick_fallback_tile(world, character, prefer_far=False)
+
+
+def _step_toward(world, character, target_tile):
+    if not target_tile:
+        return
+    occupied = _occupied_positions(character.profile.id)
+    cx, cy = character.position["x"], character.position["y"]
+    tx, ty = target_tile["x"], target_tile["y"]
+
+    if (cx, cy) == (tx, ty):
+        return
+
+    options = []
+    for nx, ny in [(cx + 1, cy), (cx - 1, cy), (cx, cy + 1), (cx, cy - 1)]:
+        if not _is_walkable(world, nx, ny):
+            continue
+        if (nx, ny) in occupied:
+            continue
+        dist = abs(tx - nx) + abs(ty - ny)
+        options.append((dist, nx, ny))
+
+    if not options:
+        return
+
+    options.sort(key=lambda t: t[0])
+    _, nx, ny = options[0]
+    character.position["x"] = nx
+    character.position["y"] = ny
+
+
 def tick_base_state(character):
     character.state.needs.hunger = min(100.0, character.state.needs.hunger + 0.12)
     character.state.needs.thirst = min(100.0, character.state.needs.thirst + 0.14)
@@ -55,7 +141,7 @@ def compute_social_layers(world):
             if affinity_ab > 25 and affinity_ba > 25:
                 alliances.append({"members": [ids[i], ids[j]], "strength": (affinity_ab + affinity_ba) / 2})
 
-            if affinity_ab < -10 or affinity_ba < -10 or ids[j] in getattr(a, "grudges", []) or ids[i] in getattr(b, "grudges", []):
+            if affinity_ab < -10 or affinity_ba < -10:
                 rivalries.append({"members": [ids[i], ids[j]]})
 
     world["reputation"] = reputation
@@ -93,8 +179,12 @@ def apply_llm_action(character, llm_result, world_tick):
     utterance = action.get("utterance", "")
     target_character_id = action.get("target_character_id", "")
 
+    pending = {"name": name}
+    if name in {"move", "leave"}:
+        pending["target_tile"] = _resolve_target_tile(world, character, action)
+
     character.state.current_action_name = name
-    character.state.pending_action = {"name": name}
+    character.state.pending_action = pending
 
     update_emotions(character, name)
 
@@ -112,6 +202,11 @@ def progress_action(character, world_tick):
     pending = getattr(character.state, "pending_action", None)
     if not pending:
         return False
+
+    world = get_world()
+    name = pending.get("name")
+    if name in {"move", "leave"}:
+        _step_toward(world, character, pending.get("target_tile"))
 
     character.state.pending_action = None
     return False
@@ -132,6 +227,7 @@ async def tagged_sim_loop():
             if getattr(character.state, "speech_expires_tick", 0) and world["tick"] >= character.state.speech_expires_tick:
                 character.state.spoken_text = ""
 
+            progress_action(character, world["tick"])
             maybe_interrupt(character)
 
             force = bool(getattr(character.state, "awaiting_reply_from_id", ""))
