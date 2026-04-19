@@ -16,12 +16,15 @@ def build_decision_prompt(character: dict, world: dict) -> str:
     profile = character.get("profile", {})
     state = character.get("state", {})
     calendar = world.get("calendar", {})
-    config = world.get("config", {})
 
     memory = character.get("memory", [])[-10:]
     conversation = character.get("conversation_history", [])[-12:]
     nearby_characters = list((world.get("tagged_characters") or {}).keys())
     action_definitions = list((world.get("action_definitions") or {}).values())
+    world_reputation = world.get("reputation", {})
+    world_alliances = world.get("alliances", [])
+    world_rivalries = world.get("rivalries", [])
+    world_drama_arcs = world.get("drama_arcs", [])[-8:]
 
     reduced_state = {
         "needs": state.get("needs", {}),
@@ -36,11 +39,18 @@ def build_decision_prompt(character: dict, world: dict) -> str:
         "escalation_level": state.get("escalation_level", 0),
         "volatility": state.get("volatility", 0.5),
         "aggression_bias": state.get("aggression_bias", 0.2),
+        "drama_bias": state.get("drama_bias", 0.6),
+        "authority_sensitivity": state.get("authority_sensitivity", 0.3),
+        "insecurity": state.get("insecurity", 0.4),
         "conversation_partner_id": state.get("conversation_partner_id", ""),
         "awaiting_reply_from_id": state.get("awaiting_reply_from_id", ""),
         "conversation_turns_remaining": state.get("conversation_turns_remaining", 0),
         "conversation_topic": state.get("conversation_topic", ""),
         "affinity": state.get("affinity", {}),
+        "relationship_meters": state.get("relationship_meters", {}),
+        "grudges": state.get("grudges", []),
+        "avoid_character_ids": state.get("avoid_character_ids", []),
+        "feared_character_ids": state.get("feared_character_ids", []),
     }
 
     return f"""You are the live action planner for one simulated human in a sandbox life simulation.
@@ -72,6 +82,9 @@ Behavior rules:
 - leave is a good breaking point for conflict.
 - smash is only appropriate when emotional_temperature is very high or aggression_bias is high.
 - If speaking or yelling, include an utterance.
+- Prefer allies and friends in neutral or positive scenes.
+- Prefer rivals and grudge targets in hostile scenes.
+- Reputation matters: sims with high scandal or danger should be treated as volatile or risky.
 - Be socially dramatic and expressive, but still return exactly one next action.
 
 Recent internal memory:
@@ -88,6 +101,18 @@ Character profile:
 
 Character state:
 {json.dumps(reduced_state, ensure_ascii=False)}
+
+World reputation:
+{json.dumps(world_reputation, ensure_ascii=False)}
+
+World alliances:
+{json.dumps(world_alliances, ensure_ascii=False)}
+
+World rivalries:
+{json.dumps(world_rivalries, ensure_ascii=False)}
+
+Recent drama arcs:
+{json.dumps(world_drama_arcs, ensure_ascii=False)}
 
 Available actions:
 {json.dumps(action_definitions, ensure_ascii=False)}
