@@ -71,11 +71,40 @@ def call_chat_provider(provider_cfg: dict, messages: list[dict]) -> dict:
             messages=messages
         )
         url = base_url + path
-        with httpx.Client(timeout=10.0) as client:
-            resp = client.post(url, headers=headers, json=body)
-            resp.raise_for_status()
-            data = resp.json()
-        text = _walk_path(data, provider_cfg.get("response_text_path", "choices.0.message.content"))
-        return {"raw": data, "text": text, "request_body": body, "url": url}
+
+        debug_result = {
+            "url": url,
+            "request_headers": headers,
+            "request_body": body,
+            "status_code": None,
+            "response_text": None,
+            "response_json": None,
+            "text": None,
+            "error": None,
+        }
+
+        try:
+            with httpx.Client(timeout=10.0) as client:
+                resp = client.post(url, headers=headers, json=body)
+                debug_result["status_code"] = resp.status_code
+                debug_result["response_text"] = resp.text
+
+                try:
+                    data = resp.json()
+                    debug_result["response_json"] = data
+                except Exception:
+                    data = None
+
+                resp.raise_for_status()
+
+            if data is None:
+                raise RuntimeError("Provider returned non-JSON success response")
+
+            text = _walk_path(data, provider_cfg.get("response_text_path", "choices.0.message.content"))
+            debug_result["text"] = text
+            return debug_result
+        except Exception as e:
+            debug_result["error"] = str(e)
+            return debug_result
 
     raise RuntimeError(f"Unsupported provider_kind: {provider_kind}")
