@@ -1,5 +1,12 @@
 import os
+import time
+import threading
+import itertools
 import httpx
+
+
+_PROVIDER_LOCK = threading.Lock()
+_PROVIDER_SEQ = itertools.count(1)
 
 
 def _resolve_env_key(env_name: str) -> str:
@@ -72,7 +79,12 @@ def call_chat_provider(provider_cfg: dict, messages: list[dict]) -> dict:
         )
         url = base_url + path
 
+        queue_id = next(_PROVIDER_SEQ)
+        enqueue_ts = time.monotonic()
+
         debug_result = {
+            "queue_id": queue_id,
+            "queue_wait_ms": None,
             "url": url,
             "request_headers": headers,
             "request_body": body,
@@ -84,25 +96,28 @@ def call_chat_provider(provider_cfg: dict, messages: list[dict]) -> dict:
         }
 
         try:
-            with httpx.Client(timeout=60.0) as client:
-                resp = client.post(url, headers=headers, json=body)
-                debug_result["status_code"] = resp.status_code
-                debug_result["response_text"] = resp.text
+            with _PROVIDER_LOCK:
+                debug_result["queue_wait_ms"] = int((time.monotonic() - enqueue_ts) * 1000)
 
-                try:
-                    data = resp.json()
-                    debug_result["response_json"] = data
-                except Exception:
-                    data = None
+                with httpx.Client(timeout=60.0) as client:
+                    resp = client.post(url, headers=headers, json=body)
+                    debug_result["status_code"] = resp.status_code
+                    debug_result["response_text"] = resp.text
 
-                resp.raise_for_status()
+                    try:
+                        data = resp.json()
+                        debug_result["response_json"] = data
+                    except Exception:
+                        data = None
 
-            if data is None:
-                raise RuntimeError("Provider returned non-JSON success response")
+                    resp.raise_for_status()
 
-            text = _walk_path(data, provider_cfg.get("response_text_path", "choices.0.message.content"))
-            debug_result["text"] = text
-            return debug_result
+                if data is None:
+                    raise RuntimeError("Provider returned non-JSON success response")
+
+                text = _walk_path(data, provider_cfg.get("response_text_path", "choices.0.message.content"))
+                debug_result["text"] = text
+                return debug_result
         except Exception as e:
             debug_result["error"] = str(e)
             return debug_result
