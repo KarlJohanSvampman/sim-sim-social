@@ -84,7 +84,7 @@ def call_chat_provider(provider_cfg: dict, messages: list[dict]) -> dict:
         }
 
         try:
-            with httpx.Client(timeout=10.0) as client:
+            with httpx.Client(timeout=60.0) as client:
                 resp = client.post(url, headers=headers, json=body)
                 debug_result["status_code"] = resp.status_code
                 debug_result["response_text"] = resp.text
