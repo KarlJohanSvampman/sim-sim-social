@@ -9,6 +9,7 @@ from services.ws import manager
 from services.state import get_world_snapshot
 from services.live_sim import live_sim_loop
 from services.tagged_sim_loop import tagged_sim_loop
+from services.llm_queue import ensure_llm_worker_started
 
 app = FastAPI()
 
@@ -30,6 +31,7 @@ app.include_router(tagged_profiles_router)
 
 @app.on_event("startup")
 async def startup():
+    await ensure_llm_worker_started()
     asyncio.create_task(live_sim_loop())
     asyncio.create_task(tagged_sim_loop())
 
@@ -43,46 +45,3 @@ async def ws_endpoint(ws: WebSocket):
             await manager.broadcast(get_world_snapshot())
     except WebSocketDisconnect:
         manager.disconnect(cid)
-
-@app.get("/config")
-def get_config():
-    from services.state import get_world
-    return get_world().get("config", {})
-
-@app.post("/config")
-def set_config(cfg: dict = Body(...)):
-    from services.state import get_world
-    world = get_world()
-    existing = world.get("config", {}) or {}
-    incoming_provider = cfg.get("llm_provider")
-    existing_provider = existing.get("llm_provider", {}) or {}
-
-    merged = {**existing, **cfg}
-    if incoming_provider is not None:
-        merged["llm_provider"] = {**existing_provider, **incoming_provider}
-
-    world["config"] = merged
-    return world["config"]
-
-@app.post("/config/test")
-def test_config(cfg: dict = Body(...)):
-    from services.provider_client import call_chat_provider
-
-    provider_cfg = (cfg or {}).get("llm_provider", {}) or {}
-    result = call_chat_provider(provider_cfg, [
-        {"role": "system", "content": "You are a connectivity test. Reply briefly."},
-        {"role": "user", "content": "Reply with the single word: connected"},
-    ])
-    return result
-
-@app.get("/llm-logs")
-def get_llm_logs():
-    from services.state import get_world
-    return get_world().get("llm_logs", [])
-
-@app.delete("/llm-logs")
-def clear_llm_logs():
-    from services.state import get_world
-    world = get_world()
-    world["llm_logs"] = []
-    return {"ok": True, "count": 0}
