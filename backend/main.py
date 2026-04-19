@@ -68,3 +68,10 @@ def set_config(cfg: dict = Body(...)):
 def get_llm_logs():
     from services.state import get_world
     return get_world().get("llm_logs", [])
+
+@app.delete("/llm-logs")
+def clear_llm_logs():
+    from services.state import get_world
+    world = get_world()
+    world["llm_logs"] = []
+    return {"ok": True, "count": 0}
