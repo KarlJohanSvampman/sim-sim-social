@@ -64,6 +64,17 @@ def set_config(cfg: dict = Body(...)):
     world["config"] = merged
     return world["config"]
 
+@app.post("/config/test")
+def test_config(cfg: dict = Body(...)):
+    from services.provider_client import call_chat_provider
+
+    provider_cfg = (cfg or {}).get("llm_provider", {}) or {}
+    result = call_chat_provider(provider_cfg, [
+        {"role": "system", "content": "You are a connectivity test. Reply briefly."},
+        {"role": "user", "content": "Reply with the single word: connected"},
+    ])
+    return result
+
 @app.get("/llm-logs")
 def get_llm_logs():
     from services.state import get_world
