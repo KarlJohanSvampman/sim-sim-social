@@ -47,8 +47,9 @@ def build_decision_prompt(character: dict, world: dict) -> str:
     relationships = _summarize_relationships(character, world)
 
     allowed_actions = [
-        "wait","move","speak","yell","gesture","leave","smash","observe","relax","study"
+        "wait", "move", "speak", "yell", "gesture", "leave", "smash", "observe", "relax", "study"
     ]
+    allowed_actions_text = " | ".join(f'"{a}"' for a in allowed_actions)
 
     prompt = f"""
 Return JSON only.
@@ -57,7 +58,7 @@ Schema:
 {{
   "thought": "...",
   "action": {{
-    "name": "|".join({allowed_actions}),
+    "name": {allowed_actions_text},
     "intention": "...",
     "target_character_id": "",
     "target_tile": {{"x":0,"y":0}},
@@ -65,7 +66,7 @@ Schema:
     "pre_action_delay": 1,
     "duration_seconds": 4,
     "post_action_delay": 1,
-    "action_mood": "calm|playful|dramatic|annoyed|angry|furious|sad|smug"
+    "action_mood": "calm" | "playful" | "dramatic" | "annoyed" | "angry" | "furious" | "sad" | "smug"
   }}
 }}
 
@@ -74,6 +75,7 @@ Behavior:
 - If awaiting reply, respond.
 - High emotion -> escalate.
 - smash only if very emotional.
+- Choose exactly one action name, never a list and never multiple actions combined.
 
 Character:
 {json.dumps(compact)}
@@ -107,7 +109,7 @@ def maybe_run_decision_llm(character: dict, world: dict, now_ts: float | None = 
         return None
 
     provider_result = call_chat_provider(provider_cfg, [
-        {"role": "system", "content": "Return valid JSON only."},
+        {"role": "system", "content": "Return valid JSON only. Choose one action only."},
         {"role": "user", "content": prompt},
     ])
 
