@@ -54,6 +54,7 @@ def seed_default_tagged_characters():
             action_delay_ticks_remaining=0,
             action_phase="idle",
             pending_action=None,
+            household_id="house_1"
         ),
         position={"x": 3, "y": 3, "z": 0},
         inventory_item_ids=[],
@@ -110,8 +111,9 @@ def seed_default_tagged_characters():
             action_delay_ticks_remaining=0,
             action_phase="idle",
             pending_action=None,
+            household_id="house_2"
         ),
-        position={"x": 8, "y": 8, "z": 0},
+        position={"x": 14, "y": 3, "z": 0},
         inventory_item_ids=[],
         equipped_item_ids=[],
         memory=[],
