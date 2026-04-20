@@ -3,7 +3,7 @@ from copy import deepcopy
 WORLD = {
     "tick": 0,
     "grid": {
-        "width": 12,
+        "width": 20,
         "height": 12,
         "tiles": {}
     },
@@ -15,6 +15,9 @@ WORLD = {
     "objects": {},
     "items": {},
     "tagged_characters": {},
+    "zones": {},
+    "doors": [],
+    "households": {},
     "config": {
         "tick_rate": 1.0,
         "llm_interval_seconds": 30.0,
@@ -52,20 +55,52 @@ WORLD = {
 
 
 def make_tile(x, y):
-    is_border = x == 0 or y == 0 or x == WORLD["grid"]["width"] - 1 or y == WORLD["grid"]["height"] - 1
     return {
         "x": x,
         "y": y,
         "z": 0,
-        "tile_type": "wall" if is_border else "floor",
+        "tile_type": "void",
         "elevation": "FLAT",
         "room_tag": None,
         "zone_type": None,
+        "household_id": None,
         "object": None,
         "items": [],
-        "blocks_movement": is_border,
-        "blocks_sight": is_border
+        "blocks_movement": True,
+        "blocks_sight": True
     }
+
+
+def carve_floor(x1, y1, x2, y2, *, zone_type=None, room_tag=None, household_id=None, tile_type="floor"):
+    for y in range(y1, y2 + 1):
+        for x in range(x1, x2 + 1):
+            tile = WORLD["grid"]["tiles"][f"{x},{y}"]
+            tile["tile_type"] = tile_type
+            tile["zone_type"] = zone_type
+            tile["room_tag"] = room_tag
+            tile["household_id"] = household_id
+            tile["blocks_movement"] = False
+            tile["blocks_sight"] = False
+
+
+def set_wall(x, y, *, zone_type=None, household_id=None):
+    tile = WORLD["grid"]["tiles"][f"{x},{y}"]
+    tile["tile_type"] = "wall"
+    tile["zone_type"] = zone_type
+    tile["household_id"] = household_id
+    tile["blocks_movement"] = True
+    tile["blocks_sight"] = True
+
+
+def set_door(x, y, *, connects, household_id=None):
+    tile = WORLD["grid"]["tiles"][f"{x},{y}"]
+    tile["tile_type"] = "door"
+    tile["zone_type"] = "door"
+    tile["room_tag"] = "entry"
+    tile["household_id"] = household_id
+    tile["blocks_movement"] = False
+    tile["blocks_sight"] = False
+    WORLD["doors"].append({"x": x, "y": y, "connects": connects, "household_id": household_id})
 
 
 def init():
@@ -79,38 +114,103 @@ def init():
         for x in range(width):
             WORLD["grid"]["tiles"][f"{x},{y}"] = make_tile(x, y)
 
-    for tile in WORLD["grid"]["tiles"].values():
-        if 2 <= tile["x"] <= 4 and 2 <= tile["y"] <= 4:
-            tile["room_tag"] = "bedroom"
-        elif 5 <= tile["x"] <= 7 and 2 <= tile["y"] <= 4:
-            tile["room_tag"] = "kitchen"
-        elif 8 <= tile["x"] <= 10 and 2 <= tile["y"] <= 4:
-            tile["room_tag"] = "living_room"
-        elif 2 <= tile["x"] <= 4 and 5 <= tile["y"] <= 7:
-            tile["room_tag"] = "bathroom"
-        elif 5 <= tile["x"] <= 10 and 5 <= tile["y"] <= 10:
-            tile["room_tag"] = "yard"
+    # Base outer boundary
+    for x in range(width):
+        set_wall(x, 0)
+        set_wall(x, height - 1)
+    for y in range(height):
+        set_wall(0, y)
+        set_wall(width - 1, y)
+
+    # Street zone in the middle
+    carve_floor(8, 1, 11, 10, zone_type="street", room_tag="street", household_id=None, tile_type="street")
+
+    # Households metadata
+    WORLD["households"] = {
+        "house_1": {
+            "id": "house_1",
+            "name": "Household 1",
+            "zone_id": "house_1",
+            "members": ["tag_ada"],
+            "balance": 1200.0,
+            "weekly_upkeep": 350.0,
+            "car": {"id": "car_house_1", "name": "Household Car 1", "cost_per_roundtrip": 12.0}
+        },
+        "house_2": {
+            "id": "house_2",
+            "name": "Household 2",
+            "zone_id": "house_2",
+            "members": ["tag_bryn"],
+            "balance": 1200.0,
+            "weekly_upkeep": 350.0,
+            "car": {"id": "car_house_2", "name": "Household Car 2", "cost_per_roundtrip": 12.0}
+        }
+    }
+
+    WORLD["zones"] = {
+        "house_1": {"id": "house_1", "name": "House 1", "type": "household"},
+        "street": {"id": "street", "name": "Neighborhood Street", "type": "street"},
+        "house_2": {"id": "house_2", "name": "House 2", "type": "household"},
+    }
+
+    # Left house shell: x 1..7, y 1..10
+    for x in range(1, 8):
+        set_wall(x, 1, zone_type="house_1", household_id="house_1")
+        set_wall(x, 10, zone_type="house_1", household_id="house_1")
+    for y in range(1, 11):
+        set_wall(1, y, zone_type="house_1", household_id="house_1")
+        set_wall(7, y, zone_type="house_1", household_id="house_1")
+
+    carve_floor(2, 2, 4, 4, zone_type="house_1", room_tag="bedroom", household_id="house_1")
+    carve_floor(2, 5, 4, 7, zone_type="house_1", room_tag="bathroom", household_id="house_1")
+    carve_floor(5, 2, 6, 4, zone_type="house_1", room_tag="kitchen", household_id="house_1")
+    carve_floor(5, 5, 6, 9, zone_type="house_1", room_tag="living_room", household_id="house_1")
+    carve_floor(2, 8, 4, 9, zone_type="house_1", room_tag="hall", household_id="house_1")
+
+    # Door from house 1 to street
+    set_door(7, 6, connects=["house_1", "street"], household_id="house_1")
+
+    # Right house shell: x 12..18, y 1..10
+    for x in range(12, 19):
+        set_wall(x, 1, zone_type="house_2", household_id="house_2")
+        set_wall(x, 10, zone_type="house_2", household_id="house_2")
+    for y in range(1, 11):
+        set_wall(12, y, zone_type="house_2", household_id="house_2")
+        set_wall(18, y, zone_type="house_2", household_id="house_2")
+
+    carve_floor(13, 2, 15, 4, zone_type="house_2", room_tag="bedroom", household_id="house_2")
+    carve_floor(13, 5, 15, 7, zone_type="house_2", room_tag="bathroom", household_id="house_2")
+    carve_floor(16, 2, 17, 4, zone_type="house_2", room_tag="kitchen", household_id="house_2")
+    carve_floor(16, 5, 17, 9, zone_type="house_2", room_tag="living_room", household_id="house_2")
+    carve_floor(13, 8, 15, 9, zone_type="house_2", room_tag="hall", household_id="house_2")
+
+    # Door from street to house 2
+    set_door(12, 6, connects=["street", "house_2"], household_id="house_2")
 
     WORLD["objects"].update({
-        "obj_bed": {"id": "obj_bed", "name": "Bed", "category": "bed"},
-        "obj_stove": {"id": "obj_stove", "name": "Stove", "category": "stove"},
-        "obj_food": {"id": "obj_food", "name": "Food", "category": "food"},
-        "obj_tv": {"id": "obj_tv", "name": "TV", "category": "tv"},
-        "obj_restroom": {"id": "obj_restroom", "name": "Restroom", "category": "restroom"},
-        "obj_computer": {"id": "obj_computer", "name": "Computer", "category": "computer"},
-        "obj_book": {"id": "obj_book", "name": "Book", "category": "book"},
+        "obj_bed_1": {"id": "obj_bed_1", "name": "Bed", "category": "bed", "household_id": "house_1"},
+        "obj_stove_1": {"id": "obj_stove_1", "name": "Stove", "category": "stove", "household_id": "house_1"},
+        "obj_tv_1": {"id": "obj_tv_1", "name": "TV", "category": "tv", "household_id": "house_1"},
+        "obj_restroom_1": {"id": "obj_restroom_1", "name": "Restroom", "category": "restroom", "household_id": "house_1"},
+        "obj_bed_2": {"id": "obj_bed_2", "name": "Bed", "category": "bed", "household_id": "house_2"},
+        "obj_stove_2": {"id": "obj_stove_2", "name": "Stove", "category": "stove", "household_id": "house_2"},
+        "obj_tv_2": {"id": "obj_tv_2", "name": "TV", "category": "tv", "household_id": "house_2"},
+        "obj_restroom_2": {"id": "obj_restroom_2", "name": "Restroom", "category": "restroom", "household_id": "house_2"},
+        "obj_car_1": {"id": "obj_car_1", "name": "Car", "category": "car", "household_id": "house_1"},
+        "obj_car_2": {"id": "obj_car_2", "name": "Car", "category": "car", "household_id": "house_2"},
     })
 
-    WORLD["grid"]["tiles"]["3,3"]["object"] = WORLD["objects"]["obj_bed"]
-    WORLD["grid"]["tiles"]["6,3"]["object"] = WORLD["objects"]["obj_stove"]
-    WORLD["grid"]["tiles"]["7,3"]["object"] = WORLD["objects"]["obj_food"]
-    WORLD["grid"]["tiles"]["9,3"]["object"] = WORLD["objects"]["obj_tv"]
-    WORLD["grid"]["tiles"]["3,6"]["object"] = WORLD["objects"]["obj_restroom"]
-    WORLD["grid"]["tiles"]["6,6"]["object"] = WORLD["objects"]["obj_computer"]
-    WORLD["grid"]["tiles"]["9,6"]["object"] = WORLD["objects"]["obj_book"]
-    WORLD["grid"]["tiles"]["4,3"]["items"] = [
-        {"id": "item_phone", "name": "Smartphone", "type": "smartphone"}
-    ]
+    WORLD["grid"]["tiles"]["3,3"]["object"] = WORLD["objects"]["obj_bed_1"]
+    WORLD["grid"]["tiles"]["5,3"]["object"] = WORLD["objects"]["obj_stove_1"]
+    WORLD["grid"]["tiles"]["6,7"]["object"] = WORLD["objects"]["obj_tv_1"]
+    WORLD["grid"]["tiles"]["3,6"]["object"] = WORLD["objects"]["obj_restroom_1"]
+    WORLD["grid"]["tiles"]["13,3"]["object"] = WORLD["objects"]["obj_bed_2"]
+    WORLD["grid"]["tiles"]["16,3"]["object"] = WORLD["objects"]["obj_stove_2"]
+    WORLD["grid"]["tiles"]["17,7"]["object"] = WORLD["objects"]["obj_tv_2"]
+    WORLD["grid"]["tiles"]["14,6"]["object"] = WORLD["objects"]["obj_restroom_2"]
+    WORLD["grid"]["tiles"]["8,9"]["object"] = WORLD["objects"]["obj_car_1"]
+    WORLD["grid"]["tiles"]["11,9"]["object"] = WORLD["objects"]["obj_car_2"]
+    WORLD["grid"]["tiles"]["4,3"]["items"] = [{"id": "item_phone", "name": "Smartphone", "type": "smartphone"}]
 
     WORLD["action_definitions"].update({
         "act_wait": {
