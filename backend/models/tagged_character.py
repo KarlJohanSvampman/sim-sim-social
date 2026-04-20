@@ -59,6 +59,7 @@ class NeedState(BaseModel):
     thirst: float = Field(default=0.0, ge=0.0, le=100.0)
     bladder: float = Field(default=0.0, ge=0.0, le=100.0)
     sleep: float = Field(default=0.0, ge=0.0, le=100.0)
+    hygiene: float = Field(default=0.0, ge=0.0, le=100.0)
 
 class ActivityType(str, Enum):
     STUDY = "study"
@@ -126,6 +127,7 @@ class CharacterStateV2(BaseModel):
     drama_bias: float = Field(default=0.6, ge=0.0, le=1.0)
     authority_sensitivity: float = Field(default=0.3, ge=0.0, le=1.0)
     insecurity: float = Field(default=0.4, ge=0.0, le=1.0)
+    social_patience: float = Field(default=45.0, ge=0.0, le=100.0)
     current_activity: CurrentActivity | None = None
     roam_tiles_remaining: int = Field(default=0, ge=0)
     last_idle_roll: list[int] = Field(default_factory=list)
@@ -135,21 +137,38 @@ class CharacterStateV2(BaseModel):
     move_cooldown_ticks: int = Field(default=0, ge=0)
     spoken_text: str = ""
     speech_expires_tick: int = Field(default=0, ge=0)
+    speech_bubbles: list[dict[str, Any]] = Field(default_factory=list)
     current_intention: str = ""
     current_action_name: str = ""
     action_delay_ticks_remaining: int = Field(default=0, ge=0)
     action_phase: str = "idle"
     pending_action: dict | None = None
+    household_id: str = ""
     conversation_partner_id: str = ""
     awaiting_reply_from_id: str = ""
+    waiting_on_character_id: str = ""
     conversation_turns_remaining: int = Field(default=0, ge=0)
+    conversation_rounds_started: int = Field(default=0, ge=0)
+    conversation_rounds_enjoyed_total: int = Field(default=0, ge=0)
     last_conversation_tick: int = Field(default=0, ge=0)
     conversation_topic: str = ""
+    conversation_initiator_id: str = ""
+    conversation_last_speech_act: str = ""
+    conversation_last_score: float = Field(default=50.0, ge=0.0, le=100.0)
+    conversation_score_history: list[float] = Field(default_factory=list)
     affinity: dict[str, float] = Field(default_factory=dict)
     relationship_meters: dict[str, RelationshipMeter] = Field(default_factory=dict)
     grudges: list[GrudgeMemory] = Field(default_factory=list)
     avoid_character_ids: list[str] = Field(default_factory=list)
     feared_character_ids: list[str] = Field(default_factory=list)
+    weekly_motivators: dict[str, float] = Field(default_factory=lambda: {
+        "social": 0.0,
+        "exercise": 0.0,
+        "nature": 0.0,
+        "creative": 0.0,
+        "intimacy": 0.0,
+        "mental_health": 0.0,
+    })
     facing: dict[str, float] = Field(default_factory=lambda: {"x": 0.0, "y": 1.0})
     last_llm_at: float = Field(default=0.0)
     llm_in_flight: bool = Field(default=False)
