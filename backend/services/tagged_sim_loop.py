@@ -6,13 +6,59 @@ from services.tagged_runtime import seed_default_tagged_characters
 from services.ws import manager
 
 
-def step_toward(c, tx, ty):
+def _tile_at(world, x, y):
+    return (world.get("grid", {}).get("tiles", {}) or {}).get(f"{x},{y}")
+
+
+def _is_walkable(world, x, y, mover_id=None):
+    tile = _tile_at(world, x, y)
+    if not tile:
+        return False
+    if tile.get("blocks_movement", False):
+        return False
+    for c in TAGGED_CHARACTERS.values():
+        if mover_id and c.profile.id == mover_id:
+            continue
+        if c.position["x"] == x and c.position["y"] == y:
+            return False
+    return True
+
+
+def step_toward(world, c, tx, ty):
     cx, cy = c.position["x"], c.position["y"]
-    if cx < tx: cx += 1
-    elif cx > tx: cx -= 1
-    elif cy < ty: cy += 1
-    elif cy > ty: cy -= 1
-    c.position["x"], c.position["y"] = cx, cy
+    if (cx, cy) == (tx, ty):
+        return True
+
+    candidates = []
+    if cx < tx:
+        candidates.append((cx + 1, cy))
+    elif cx > tx:
+        candidates.append((cx - 1, cy))
+    if cy < ty:
+        candidates.append((cx, cy + 1))
+    elif cy > ty:
+        candidates.append((cx, cy - 1))
+
+    # fallback orthogonal options so they do not just ram walls forever
+    for nx, ny in [(cx + 1, cy), (cx - 1, cy), (cx, cy + 1), (cx, cy - 1)]:
+        if (nx, ny) not in candidates:
+            candidates.append((nx, ny))
+
+    best = None
+    best_d = 10**9
+    for nx, ny in candidates:
+        if not _is_walkable(world, nx, ny, mover_id=c.profile.id):
+            continue
+        d = abs(tx - nx) + abs(ty - ny)
+        if d < best_d:
+            best_d = d
+            best = (nx, ny)
+
+    if best is None:
+        return False
+
+    c.position["x"], c.position["y"] = best
+    return True
 
 
 def nearest_other(c):
@@ -23,7 +69,7 @@ def nearest_other(c):
             continue
         dx = o.position["x"] - c.position["x"]
         dy = o.position["y"] - c.position["y"]
-        d = dx*dx + dy*dy
+        d = dx * dx + dy * dy
         if d < best_d:
             best_d = d
             best = o
@@ -62,9 +108,12 @@ async def tagged_sim_loop():
                 tgt = pending.get("target_tile") or {}
                 tx, ty = tgt.get("x", c.position["x"]), tgt.get("y", c.position["y"])
                 if (c.position["x"], c.position["y"]) != (tx, ty):
-                    step_toward(c, tx, ty)
-                    c.state.current_action_name = "move"
-                    continue
+                    moved = step_toward(world, c, tx, ty)
+                    if moved:
+                        c.state.current_action_name = "move"
+                        continue
+                    c.state.pending_action = None
+                    c.state.current_action_name = "wait"
                 else:
                     c.state.pending_action = None
 
@@ -85,8 +134,12 @@ async def tagged_sim_loop():
 
             if name == "move":
                 tgt = act.get("target_tile") or {"x": c.position["x"], "y": c.position["y"]}
-                c.state.pending_action = {"name": "move", "target_tile": tgt}
-                step_toward(c, tgt.get("x", 0), tgt.get("y", 0))
+                # reject impossible targets early
+                if _is_walkable(world, tgt.get("x", c.position["x"]), tgt.get("y", c.position["y"]), mover_id=c.profile.id):
+                    c.state.pending_action = {"name": "move", "target_tile": tgt}
+                    step_toward(world, c, tgt.get("x", 0), tgt.get("y", 0))
+                else:
+                    name = "wait"
 
             if name in ["speak", "yell"]:
                 utt = (act.get("utterance") or "").strip()
