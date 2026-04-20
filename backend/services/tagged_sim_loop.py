@@ -5,6 +5,55 @@ from services.tagged_profile_store import TAGGED_CHARACTERS
 from services.tagged_runtime import seed_default_tagged_characters
 from services.ws import manager
 
+def update_motivators(c):
+    for k in c.state.weekly_motivators:
+        c.state.weekly_motivators[k] = min(100, c.state.weekly_motivators[k] + 0.2)
+
+
+def decay_grudges(c):
+    new = []
+    for g in c.state.grudges:
+        g["intensity"] *= 0.995
+        if g["intensity"] > 1:
+            new.append(g)
+    c.state.grudges = new
+
+
+def handle_jobs(world):
+    world.setdefault("offmap", [])
+
+    # send to work
+    for cid, c in list(TAGGED_CHARACTERS.items()):
+        now = world["calendar"]["minute_of_day"]
+
+        if getattr(c.state, "job_id", None) and now == getattr(c.state, "work_start_minute", -1):
+            world["offmap"].append({
+                "character_id": cid,
+                "return_tick": world["tick"] + 200,
+                "hourly_wage": getattr(c.state, "hourly_wage", 10)
+            })
+            del TAGGED_CHARACTERS[cid]
+
+    # return from work
+    for entry in list(world["offmap"]):
+        if entry["return_tick"] <= world["tick"]:
+            seed_default_tagged_characters()
+            cid = entry["character_id"]
+
+            if cid in TAGGED_CHARACTERS:
+                c = TAGGED_CHARACTERS[cid]
+                h = world["households"].get(c.state.household_id)
+
+                if h:
+                    h["balance"] += entry["hourly_wage"] * 8
+
+                c.memory.append({
+                    "kind": "work",
+                    "text": "Worked a shift",
+                    "tick": world["tick"]
+                })
+
+            world["offmap"].remove(entry)
 
 def _tile_at(world, x, y):
     return (world.get("grid", {}).get("tiles", {}) or {}).get(f"{x},{y}")
@@ -93,8 +142,11 @@ async def tagged_sim_loop():
 
     while True:
         world["tick"] += 1
+        handle_jobs(world)
 
         for c in TAGGED_CHARACTERS.values():
+            update_motivators(c)
+            decay_grudges(c)
             if getattr(c.state, "speech_expires_tick", 0) and world["tick"] >= c.state.speech_expires_tick:
                 c.state.spoken_text = ""
                 c.state.speech_expires_tick = 0
