@@ -144,6 +144,11 @@ class CharacterStateV2(BaseModel):
     action_phase: str = "idle"
     pending_action: dict | None = None
     household_id: str = ""
+    job_id: str = ""
+    hourly_wage: float = Field(default=0.0, ge=0.0)
+    work_start_minute: int = Field(default=-1)
+    work_duration_minutes: int = Field(default=0, ge=0)
+    is_offmap: bool = Field(default=False)
     conversation_partner_id: str = ""
     awaiting_reply_from_id: str = ""
     waiting_on_character_id: str = ""
