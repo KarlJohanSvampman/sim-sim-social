@@ -97,6 +97,14 @@ class GrudgeMemory(BaseModel):
     created_tick: int = Field(default=0, ge=0)
     decay_rate: float = Field(default=0.25, ge=0.0, le=5.0)
 
+class SubjectiveView(BaseModel):
+    subject_type: str = "character"
+    subject_ref: str = ""
+    keywords: list[str] = Field(default_factory=list)
+    summary: str = ""
+    confidence: float = Field(default=0.5, ge=0.0, le=1.0)
+    last_updated_tick: int = Field(default=0, ge=0)
+
 class CharacterProfileV2(BaseModel):
     id: str = Field(min_length=1)
     name: str = Field(min_length=1)
@@ -186,3 +194,4 @@ class CharacterV2(BaseModel):
     equipped_item_ids: list[str] = Field(default_factory=list)
     memory: list[dict[str, Any]] = Field(default_factory=list)
     conversation_history: list[dict[str, Any]] = Field(default_factory=list)
+    subjective_views: list[SubjectiveView] = Field(default_factory=list)
