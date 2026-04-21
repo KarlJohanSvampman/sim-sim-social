@@ -114,7 +114,6 @@ def init():
         for x in range(width):
             WORLD["grid"]["tiles"][f"{x},{y}"] = make_tile(x, y)
 
-    # Base outer boundary
     for x in range(width):
         set_wall(x, 0)
         set_wall(x, height - 1)
@@ -122,10 +121,8 @@ def init():
         set_wall(0, y)
         set_wall(width - 1, y)
 
-    # Street zone in the middle
     carve_floor(8, 1, 11, 10, zone_type="street", room_tag="street", household_id=None, tile_type="street")
 
-    # Households metadata
     WORLD["households"] = {
         "house_1": {
             "id": "house_1",
@@ -153,7 +150,6 @@ def init():
         "house_2": {"id": "house_2", "name": "House 2", "type": "household"},
     }
 
-    # Left house shell: x 1..7, y 1..10
     for x in range(1, 8):
         set_wall(x, 1, zone_type="house_1", household_id="house_1")
         set_wall(x, 10, zone_type="house_1", household_id="house_1")
@@ -166,11 +162,8 @@ def init():
     carve_floor(5, 2, 6, 4, zone_type="house_1", room_tag="kitchen", household_id="house_1")
     carve_floor(5, 5, 6, 9, zone_type="house_1", room_tag="living_room", household_id="house_1")
     carve_floor(2, 8, 4, 9, zone_type="house_1", room_tag="hall", household_id="house_1")
-
-    # Door from house 1 to street
     set_door(7, 6, connects=["house_1", "street"], household_id="house_1")
 
-    # Right house shell: x 12..18, y 1..10
     for x in range(12, 19):
         set_wall(x, 1, zone_type="house_2", household_id="house_2")
         set_wall(x, 10, zone_type="house_2", household_id="house_2")
@@ -183,8 +176,6 @@ def init():
     carve_floor(16, 2, 17, 4, zone_type="house_2", room_tag="kitchen", household_id="house_2")
     carve_floor(16, 5, 17, 9, zone_type="house_2", room_tag="living_room", household_id="house_2")
     carve_floor(13, 8, 15, 9, zone_type="house_2", room_tag="hall", household_id="house_2")
-
-    # Door from street to house 2
     set_door(12, 6, connects=["street", "house_2"], household_id="house_2")
 
     WORLD["objects"].update({
@@ -214,174 +205,74 @@ def init():
 
     WORLD["action_definitions"].update({
         "act_wait": {
-            "id": "act_wait",
-            "name": "wait",
-            "category": "idle",
-            "description": "Pause briefly without changing position.",
-            "supports_target_character": False,
-            "supports_target_tile": False,
-            "supports_utterance": False,
-            "supports_action_mood": True,
-            "default_pre_action_delay": 2,
-            "default_duration_seconds": 4,
-            "default_post_action_delay": 2,
-            "min_duration_seconds": 1,
-            "max_duration_seconds": 60,
-            "allowed_intentions": ["pause", "think", "wait"],
-            "notes": ""
+            "id": "act_wait", "name": "wait", "category": "idle", "description": "Pause briefly without changing position.",
+            "supports_target_character": False, "supports_target_tile": False, "supports_utterance": False, "supports_action_mood": True,
+            "default_pre_action_delay": 2, "default_duration_seconds": 4, "default_post_action_delay": 2,
+            "min_duration_seconds": 1, "max_duration_seconds": 60, "allowed_intentions": ["pause", "think", "wait"], "notes": "",
+            "motivator_tags": [], "interest_tags": ["pause", "thinking"]
         },
         "act_move": {
-            "id": "act_move",
-            "name": "move",
-            "category": "movement",
-            "description": "Move toward a target tile.",
-            "supports_target_character": False,
-            "supports_target_tile": True,
-            "supports_utterance": False,
-            "supports_action_mood": True,
-            "default_pre_action_delay": 1,
-            "default_duration_seconds": 3,
-            "default_post_action_delay": 1,
-            "min_duration_seconds": 1,
-            "max_duration_seconds": 30,
-            "allowed_intentions": ["go somewhere", "approach", "relocate"],
-            "notes": ""
+            "id": "act_move", "name": "move", "category": "movement", "description": "Move toward a target tile.",
+            "supports_target_character": False, "supports_target_tile": True, "supports_utterance": False, "supports_action_mood": True,
+            "default_pre_action_delay": 1, "default_duration_seconds": 3, "default_post_action_delay": 1,
+            "min_duration_seconds": 1, "max_duration_seconds": 30, "allowed_intentions": ["go somewhere", "approach", "relocate"], "notes": "",
+            "motivator_tags": ["nature"], "interest_tags": ["exploration", "visiting"]
         },
         "act_speak": {
-            "id": "act_speak",
-            "name": "speak",
-            "category": "social",
-            "description": "Speak to another character or aloud.",
-            "supports_target_character": True,
-            "supports_target_tile": False,
-            "supports_utterance": True,
-            "supports_action_mood": True,
-            "default_pre_action_delay": 2,
-            "default_duration_seconds": 6,
-            "default_post_action_delay": 2,
-            "min_duration_seconds": 1,
-            "max_duration_seconds": 45,
-            "allowed_intentions": ["talk", "ask", "comment", "greet"],
-            "notes": ""
+            "id": "act_speak", "name": "speak", "category": "social", "description": "Speak to another character or aloud.",
+            "supports_target_character": True, "supports_target_tile": False, "supports_utterance": True, "supports_action_mood": True,
+            "default_pre_action_delay": 2, "default_duration_seconds": 6, "default_post_action_delay": 2,
+            "min_duration_seconds": 1, "max_duration_seconds": 45, "allowed_intentions": ["talk", "ask", "comment", "greet"], "notes": "",
+            "motivator_tags": ["social"], "interest_tags": ["conversation", "gossip", "friendship"]
         },
         "act_yell": {
-            "id": "act_yell",
-            "name": "yell",
-            "category": "social",
-            "description": "Raise voice in an emotional or confrontational way.",
-            "supports_target_character": True,
-            "supports_target_tile": False,
-            "supports_utterance": True,
-            "supports_action_mood": True,
-            "default_pre_action_delay": 1,
-            "default_duration_seconds": 4,
-            "default_post_action_delay": 2,
-            "min_duration_seconds": 1,
-            "max_duration_seconds": 20,
-            "allowed_intentions": ["argue", "complain", "accuse", "vent"],
-            "notes": ""
+            "id": "act_yell", "name": "yell", "category": "social", "description": "Raise voice in an emotional or confrontational way.",
+            "supports_target_character": True, "supports_target_tile": False, "supports_utterance": True, "supports_action_mood": True,
+            "default_pre_action_delay": 1, "default_duration_seconds": 4, "default_post_action_delay": 2,
+            "min_duration_seconds": 1, "max_duration_seconds": 20, "allowed_intentions": ["argue", "complain", "accuse", "vent"], "notes": "",
+            "motivator_tags": ["social", "mental_health"], "interest_tags": ["conflict", "anger", "argument"]
         },
         "act_gesture": {
-            "id": "act_gesture",
-            "name": "gesture",
-            "category": "social",
-            "description": "Use body language to react or emphasize.",
-            "supports_target_character": True,
-            "supports_target_tile": False,
-            "supports_utterance": False,
-            "supports_action_mood": True,
-            "default_pre_action_delay": 1,
-            "default_duration_seconds": 3,
-            "default_post_action_delay": 1,
-            "min_duration_seconds": 1,
-            "max_duration_seconds": 15,
-            "allowed_intentions": ["react", "emphasize", "dismiss", "threaten"],
-            "notes": ""
+            "id": "act_gesture", "name": "gesture", "category": "social", "description": "Use body language to react or emphasize.",
+            "supports_target_character": True, "supports_target_tile": False, "supports_utterance": False, "supports_action_mood": True,
+            "default_pre_action_delay": 1, "default_duration_seconds": 3, "default_post_action_delay": 1,
+            "min_duration_seconds": 1, "max_duration_seconds": 15, "allowed_intentions": ["react", "emphasize", "dismiss", "threaten"], "notes": "",
+            "motivator_tags": ["social"], "interest_tags": ["expression", "attitude"]
         },
         "act_leave": {
-            "id": "act_leave",
-            "name": "leave",
-            "category": "movement",
-            "description": "Exit the situation or room.",
-            "supports_target_character": False,
-            "supports_target_tile": True,
-            "supports_utterance": False,
-            "supports_action_mood": True,
-            "default_pre_action_delay": 1,
-            "default_duration_seconds": 5,
-            "default_post_action_delay": 1,
-            "min_duration_seconds": 1,
-            "max_duration_seconds": 30,
-            "allowed_intentions": ["exit", "avoid", "escape", "storm off"],
-            "notes": ""
+            "id": "act_leave", "name": "leave", "category": "movement", "description": "Exit the situation or room.",
+            "supports_target_character": False, "supports_target_tile": True, "supports_utterance": False, "supports_action_mood": True,
+            "default_pre_action_delay": 1, "default_duration_seconds": 5, "default_post_action_delay": 1,
+            "min_duration_seconds": 1, "max_duration_seconds": 30, "allowed_intentions": ["exit", "avoid", "escape", "storm off"], "notes": "",
+            "motivator_tags": ["mental_health"], "interest_tags": ["avoidance", "escape"]
         },
         "act_smash": {
-            "id": "act_smash",
-            "name": "smash",
-            "category": "destructive",
-            "description": "Break or strike a nearby object in anger.",
-            "supports_target_character": False,
-            "supports_target_tile": True,
-            "supports_utterance": False,
-            "supports_action_mood": True,
-            "default_pre_action_delay": 1,
-            "default_duration_seconds": 3,
-            "default_post_action_delay": 2,
-            "min_duration_seconds": 1,
-            "max_duration_seconds": 15,
-            "allowed_intentions": ["destroy", "vent anger", "lash out"],
-            "notes": ""
+            "id": "act_smash", "name": "smash", "category": "destructive", "description": "Break or strike a nearby object in anger.",
+            "supports_target_character": False, "supports_target_tile": True, "supports_utterance": False, "supports_action_mood": True,
+            "default_pre_action_delay": 1, "default_duration_seconds": 3, "default_post_action_delay": 2,
+            "min_duration_seconds": 1, "max_duration_seconds": 15, "allowed_intentions": ["destroy", "vent anger", "lash out"], "notes": "",
+            "motivator_tags": ["mental_health"], "interest_tags": ["anger", "destruction", "release"]
         },
         "act_observe": {
-            "id": "act_observe",
-            "name": "observe",
-            "category": "perception",
-            "description": "Look around and pay attention to surroundings.",
-            "supports_target_character": False,
-            "supports_target_tile": True,
-            "supports_utterance": False,
-            "supports_action_mood": True,
-            "default_pre_action_delay": 1,
-            "default_duration_seconds": 5,
-            "default_post_action_delay": 1,
-            "min_duration_seconds": 1,
-            "max_duration_seconds": 30,
-            "allowed_intentions": ["inspect", "watch", "notice"],
-            "notes": ""
+            "id": "act_observe", "name": "observe", "category": "perception", "description": "Look around and pay attention to surroundings.",
+            "supports_target_character": False, "supports_target_tile": True, "supports_utterance": False, "supports_action_mood": True,
+            "default_pre_action_delay": 1, "default_duration_seconds": 5, "default_post_action_delay": 1,
+            "min_duration_seconds": 1, "max_duration_seconds": 30, "allowed_intentions": ["inspect", "watch", "notice"], "notes": "",
+            "motivator_tags": ["nature"], "interest_tags": ["observation", "curiosity"]
         },
         "act_relax": {
-            "id": "act_relax",
-            "name": "relax",
-            "category": "self_regulation",
-            "description": "Rest, calm down, or decompress.",
-            "supports_target_character": False,
-            "supports_target_tile": False,
-            "supports_utterance": False,
-            "supports_action_mood": True,
-            "default_pre_action_delay": 2,
-            "default_duration_seconds": 10,
-            "default_post_action_delay": 2,
-            "min_duration_seconds": 1,
-            "max_duration_seconds": 60,
-            "allowed_intentions": ["decompress", "rest", "reset"],
-            "notes": ""
+            "id": "act_relax", "name": "relax", "category": "self_regulation", "description": "Rest, calm down, or decompress.",
+            "supports_target_character": False, "supports_target_tile": False, "supports_utterance": False, "supports_action_mood": True,
+            "default_pre_action_delay": 2, "default_duration_seconds": 10, "default_post_action_delay": 2,
+            "min_duration_seconds": 1, "max_duration_seconds": 60, "allowed_intentions": ["decompress", "rest", "reset"], "notes": "",
+            "motivator_tags": ["mental_health"], "interest_tags": ["rest", "recovery", "calm"]
         },
         "act_study": {
-            "id": "act_study",
-            "name": "study",
-            "category": "cognitive",
-            "description": "Spend time learning or thinking deeply.",
-            "supports_target_character": False,
-            "supports_target_tile": False,
-            "supports_utterance": False,
-            "supports_action_mood": True,
-            "default_pre_action_delay": 2,
-            "default_duration_seconds": 15,
-            "default_post_action_delay": 2,
-            "min_duration_seconds": 1,
-            "max_duration_seconds": 60,
-            "allowed_intentions": ["learn", "analyze", "focus"],
-            "notes": ""
+            "id": "act_study", "name": "study", "category": "cognitive", "description": "Spend time learning or thinking deeply.",
+            "supports_target_character": False, "supports_target_tile": False, "supports_utterance": False, "supports_action_mood": True,
+            "default_pre_action_delay": 2, "default_duration_seconds": 15, "default_post_action_delay": 2,
+            "min_duration_seconds": 1, "max_duration_seconds": 60, "allowed_intentions": ["learn", "analyze", "focus"], "notes": "",
+            "motivator_tags": ["creative", "mental_health"], "interest_tags": ["learning", "knowledge", "reflection"]
         }
     })
 
