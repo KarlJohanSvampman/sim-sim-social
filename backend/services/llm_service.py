@@ -20,6 +20,23 @@ def _append_log(entry: dict):
     world["llm_logs"] = world["llm_logs"][-200:]
 
 
+def _recent_memories(character: dict, limit: int = 6) -> list[dict]:
+    memory = character.get("memory", []) or []
+    out = []
+    for item in memory[-12:]:
+        if not isinstance(item, dict):
+            continue
+        out.append({
+            "kind": item.get("kind", ""),
+            "target": item.get("target", ""),
+            "about": item.get("about", ""),
+            "text": item.get("text", ""),
+            "source": item.get("source", "direct"),
+            "tick": item.get("tick", 0),
+        })
+    return out[-limit:]
+
+
 def build_decision_prompt(character: dict, world: dict) -> str:
     state = character.get("state", {})
     profile = character.get("profile", {})
@@ -33,6 +50,7 @@ def build_decision_prompt(character: dict, world: dict) -> str:
     views = character.get("subjective_views", [])[-5:]
     grudges = state.get("grudges", [])[-5:]
     motivators = state.get("weekly_motivators", {})
+    recalled_memories = _recent_memories(character)
 
     anti_greeting = ""
     recent_texts = [str(x.get("text", "")).lower() for x in recent_history]
@@ -71,6 +89,7 @@ Behavior:
 
 You may:
 - Refer to past impressions (views)
+- Refer to direct memories or gossip memories if relevant
 - Form opinions about others
 - Use evaluate_subjective to build impressions
 
@@ -108,6 +127,9 @@ Grudges:
 
 Recent conversation:
 {json.dumps(recent_history, ensure_ascii=False)}
+
+Recalled memories and gossip:
+{json.dumps(recalled_memories, ensure_ascii=False)}
 """.strip()
 
 
