@@ -4,12 +4,12 @@ from services.llm_queue import enqueue_llm_call
 from services.state import get_world
 
 ALLOWED_ACTIONS = [
-    "wait","move","speak","yell","gesture","leave",
-    "smash","observe","relax","study","evaluate_subjective"
+    "wait", "move", "speak", "yell", "gesture", "leave",
+    "smash", "observe", "relax", "study", "evaluate_subjective"
 ]
 
 ALLOWED_SPEECH_ACTS = [
-    "question","statement","request","insult","threat","greeting","farewell"
+    "question", "statement", "request", "insult", "threat", "greeting", "farewell"
 ]
 
 
@@ -35,27 +35,28 @@ def build_decision_prompt(character: dict, world: dict) -> str:
     motivators = state.get("weekly_motivators", {})
 
     anti_greeting = ""
-    if any("hello" in str(x.get("text","")).lower() for x in recent_history):
-        anti_greeting = "Do not greet again."
+    recent_texts = [str(x.get("text", "")).lower() for x in recent_history]
+    if any(("hello" in t) or t.startswith("hi") for t in recent_texts):
+        anti_greeting = "Do not greet again unless the conversation has clearly restarted."
 
     reply_rule = ""
     if awaiting:
         reply_rule = f"""
 You are being spoken to by {awaiting}.
 Reply directly using speak or yell.
-Use a YES-AND style: extend the idea and end with a question.
+Use a YES-AND style: extend the idea, stay open-ended, and often end with a question.
+Set target_character_id to {awaiting}.
 """
     elif waiting_on:
         reply_rule = f"""
 You are waiting for {waiting_on}.
-Prefer wait and show "..." unless ending conversation.
+Prefer wait and show \"...\" unless there is a strong reason to leave or observe.
 """
 
     return f"""
 Return JSON only.
 
 Choose ONE action.
-
 Never return empty speech.
 
 {anti_greeting}
@@ -66,6 +67,7 @@ Behavior:
 - Use "yes, and" conversational style
 - Avoid dead-end answers
 - End with a question often
+- Prefer continuing the current topic if one exists
 
 You may:
 - Refer to past impressions (views)
@@ -110,24 +112,40 @@ Recent conversation:
 
 
 def _normalize(data: dict):
-    act = data.get("action", {})
+    act = data.get("action", {}) or {}
     name = act.get("name", "wait")
 
     if name not in ALLOWED_ACTIONS:
         act["name"] = "wait"
+        act["target_character_id"] = ""
+        act["utterance"] = ""
 
-    if act.get("name") in ["speak","yell"] and not act.get("utterance"):
+    if act.get("name") in ["speak", "yell"] and not str(act.get("utterance") or "").strip():
         act["name"] = "wait"
+        act["target_character_id"] = ""
+        act["utterance"] = ""
 
-    data["speech_act"] = data.get("speech_act","statement")
-    data["conversation_score"] = float(data.get("conversation_score",50))
+    speech_act = str(data.get("speech_act", "statement")).strip()
+    if speech_act not in ALLOWED_SPEECH_ACTS:
+        speech_act = "statement"
+    data["speech_act"] = speech_act
 
-    data["topic"] = str(data.get("topic","")).strip()
+    try:
+        score = float(data.get("conversation_score", 50))
+    except Exception:
+        score = 50.0
+    data["conversation_score"] = max(0.0, min(100.0, score))
+
+    data["topic"] = str(data.get("topic", "")).strip()
 
     kws = data.get("view_keywords") or []
-    if not isinstance(kws,list):
+    if not isinstance(kws, list):
         kws = []
-    data["view_keywords"] = [str(x) for x in kws[:8]]
+    data["view_keywords"] = [str(x).strip() for x in kws[:8] if str(x).strip()]
+
+    if act.get("name") == "evaluate_subjective":
+        act["subject_type"] = str(act.get("subject_type") or "character").strip()
+        act["subject_ref"] = str(act.get("subject_ref") or act.get("target_character_id") or "").strip()
 
     data["action"] = act
     return data
@@ -140,7 +158,7 @@ async def maybe_run_decision_llm(character, world):
         return await call_chat_provider_async(
             world.get("config", {}).get("llm_provider", {}),
             [
-                {"role": "system", "content": "Return valid JSON only."},
+                {"role": "system", "content": "Return valid JSON only. No commentary. Include speech_act, conversation_score, topic, and view_keywords."},
                 {"role": "user", "content": prompt},
             ]
         )
