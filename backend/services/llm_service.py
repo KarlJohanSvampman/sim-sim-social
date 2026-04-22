@@ -12,6 +12,11 @@ ALLOWED_SPEECH_ACTS = [
     "question", "statement", "request", "insult", "threat", "greeting", "farewell"
 ]
 
+ALLOWED_EMOTIONS = [
+    "calm", "playful", "warm", "awkward", "annoyed", "angry",
+    "furious", "fearful", "sad", "smug", "curious", "suspicious"
+]
+
 
 def _append_log(entry: dict):
     world = get_world()
@@ -134,6 +139,7 @@ You may:
 Schema:
 {{
   "thought": "...",
+  "emotion": "{'|'.join(ALLOWED_EMOTIONS)}",
   "speech_act": "question|statement|request|insult|threat|greeting|farewell",
   "conversation_score": 0,
   "topic": "",
@@ -152,9 +158,14 @@ Self:
 {json.dumps({
     "name": profile.get("name"),
     "mood": state.get("mood"),
+    "action_mood": state.get("action_mood"),
     "partner": partner,
     "topic": topic,
-    "motivators": motivators
+    "motivators": motivators,
+    "emotional_temperature": state.get("emotional_temperature"),
+    "aggression_bias": state.get("aggression_bias"),
+    "drama_bias": state.get("drama_bias"),
+    "insecurity": state.get("insecurity")
 }, ensure_ascii=False)}
 
 Views:
@@ -190,6 +201,11 @@ def _normalize(data: dict):
         speech_act = "statement"
     data["speech_act"] = speech_act
 
+    emotion = str(data.get("emotion", "calm")).strip()
+    if emotion not in ALLOWED_EMOTIONS:
+        emotion = "calm"
+    data["emotion"] = emotion
+
     try:
         score = float(data.get("conversation_score", 50))
     except Exception:
@@ -218,7 +234,7 @@ async def maybe_run_decision_llm(character, world):
         return await call_chat_provider_async(
             world.get("config", {}).get("llm_provider", {}),
             [
-                {"role": "system", "content": "Return valid JSON only. No commentary. Include speech_act, conversation_score, topic, and view_keywords."},
+                {"role": "system", "content": "Return valid JSON only. No commentary. Include emotion, speech_act, conversation_score, topic, and view_keywords."},
                 {"role": "user", "content": prompt},
             ]
         )
