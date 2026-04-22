@@ -1,10 +1,16 @@
 import json
-
 from services.provider_client import call_chat_provider_async
 from services.llm_queue import enqueue_llm_call
 from services.state import get_world
 
-ALLOWED_ACTIONS = ["wait", "move", "speak", "yell", "gesture", "leave", "smash", "observe", "relax", "study"]
+ALLOWED_ACTIONS = [
+    "wait","move","speak","yell","gesture","leave",
+    "smash","observe","relax","study","evaluate_subjective"
+]
+
+ALLOWED_SPEECH_ACTS = [
+    "question","statement","request","insult","threat","greeting","farewell"
+]
 
 
 def _append_log(entry: dict):
@@ -15,89 +21,136 @@ def _append_log(entry: dict):
 
 
 def build_decision_prompt(character: dict, world: dict) -> str:
-    me = character.get("profile", {}).get("id")
-    awaiting = character.get("state", {}).get("awaiting_reply_from_id", "")
-    partner = character.get("state", {}).get("conversation_partner_id", "")
+    state = character.get("state", {})
+    profile = character.get("profile", {})
 
-    others = []
-    for c in (world.get("tagged_characters", {}) or {}).values():
-        pid = c.get("profile", {}).get("id")
-        if pid and pid != me:
-            others.append({
-                "id": pid,
-                "name": c.get("profile", {}).get("name", pid),
-                "position": c.get("position", {}),
-                "mood": c.get("state", {}).get("mood", "neutral"),
-                "spoken_text": c.get("state", {}).get("spoken_text", ""),
-            })
+    awaiting = state.get("awaiting_reply_from_id", "")
+    waiting_on = state.get("waiting_on_character_id", "")
+    partner = state.get("conversation_partner_id", "")
+    topic = state.get("conversation_topic", "")
 
-    compact = {
-        "self_id": me,
-        "name": character.get("profile", {}).get("name"),
-        "position": character.get("position", {}),
-        "mood": character.get("state", {}).get("mood"),
-        "current_action_name": character.get("state", {}).get("current_action_name", ""),
-        "conversation_partner_id": partner,
-        "awaiting_reply_from_id": awaiting,
-    }
+    recent_history = character.get("conversation_history", [])[-6:]
+    views = character.get("subjective_views", [])[-5:]
+    grudges = state.get("grudges", [])[-5:]
+    motivators = state.get("weekly_motivators", {})
+
+    anti_greeting = ""
+    if any("hello" in str(x.get("text","")).lower() for x in recent_history):
+        anti_greeting = "Do not greet again."
 
     reply_rule = ""
     if awaiting:
-        reply_rule = f"You are being spoken to by {awaiting}. Reply to that character now. Prefer speak or yell, and include non-empty utterance text. Set target_character_id to {awaiting}."
+        reply_rule = f"""
+You are being spoken to by {awaiting}.
+Reply directly using speak or yell.
+Use a YES-AND style: extend the idea and end with a question.
+"""
+    elif waiting_on:
+        reply_rule = f"""
+You are waiting for {waiting_on}.
+Prefer wait and show "..." unless ending conversation.
+"""
 
     return f"""
 Return JSON only.
-Choose exactly ONE action.
-Never choose speak or yell with an empty utterance.
-If you choose speak, yell, or gesture and another person is available, set target_character_id to one of the listed others, not yourself.
-If currently in conversation, prefer replying to the conversation partner.
+
+Choose ONE action.
+
+Never return empty speech.
+
+{anti_greeting}
 {reply_rule}
 
-Allowed actions: {", ".join(ALLOWED_ACTIONS)}
+Behavior:
+- Overdramatic, impulsive, emotional
+- Use "yes, and" conversational style
+- Avoid dead-end answers
+- End with a question often
+
+You may:
+- Refer to past impressions (views)
+- Form opinions about others
+- Use evaluate_subjective to build impressions
 
 Schema:
 {{
   "thought": "...",
+  "speech_act": "question|statement|request|insult|threat|greeting|farewell",
+  "conversation_score": 0,
+  "topic": "",
+  "view_keywords": [],
   "action": {{
-    "name": "wait|move|speak|yell|gesture|leave|smash|observe|relax|study",
+    "name": "{'|'.join(ALLOWED_ACTIONS)}",
     "target_character_id": "",
     "target_tile": {{"x":0,"y":0}},
-    "utterance": ""
+    "utterance": "",
+    "subject_type": "",
+    "subject_ref": ""
   }}
 }}
 
 Self:
-{json.dumps(compact, ensure_ascii=False)}
+{json.dumps({
+    "name": profile.get("name"),
+    "mood": state.get("mood"),
+    "partner": partner,
+    "topic": topic,
+    "motivators": motivators
+}, ensure_ascii=False)}
 
-Others:
-{json.dumps(others[:5], ensure_ascii=False)}
+Views:
+{json.dumps(views, ensure_ascii=False)}
+
+Grudges:
+{json.dumps(grudges, ensure_ascii=False)}
+
+Recent conversation:
+{json.dumps(recent_history, ensure_ascii=False)}
 """.strip()
 
 
-async def maybe_run_decision_llm(character: dict, world: dict):
+def _normalize(data: dict):
+    act = data.get("action", {})
+    name = act.get("name", "wait")
+
+    if name not in ALLOWED_ACTIONS:
+        act["name"] = "wait"
+
+    if act.get("name") in ["speak","yell"] and not act.get("utterance"):
+        act["name"] = "wait"
+
+    data["speech_act"] = data.get("speech_act","statement")
+    data["conversation_score"] = float(data.get("conversation_score",50))
+
+    data["topic"] = str(data.get("topic","")).strip()
+
+    kws = data.get("view_keywords") or []
+    if not isinstance(kws,list):
+        kws = []
+    data["view_keywords"] = [str(x) for x in kws[:8]]
+
+    data["action"] = act
+    return data
+
+
+async def maybe_run_decision_llm(character, world):
     prompt = build_decision_prompt(character, world)
 
     async def job():
-        return await call_chat_provider_async(world.get("config", {}).get("llm_provider", {}), [
-            {"role": "system", "content": "Return valid JSON only. Choose one action. No empty speech. When awaiting_reply_from_id is set, reply to that character."},
-            {"role": "user", "content": prompt},
-        ])
+        return await call_chat_provider_async(
+            world.get("config", {}).get("llm_provider", {}),
+            [
+                {"role": "system", "content": "Return valid JSON only."},
+                {"role": "user", "content": prompt},
+            ]
+        )
 
     result = await enqueue_llm_call(job)
     _append_log({"prompt": prompt, "provider_result": result})
 
     try:
         if result.get("text"):
-            data = json.loads(result["text"])
-            act = data.get("action", {})
-            name = act.get("name", "wait")
-            if name not in ALLOWED_ACTIONS:
-                act["name"] = "wait"
-            if act.get("name") in ["speak", "yell"] and not (act.get("utterance") or "").strip():
-                act["name"] = "wait"
-                act["utterance"] = ""
-                act["target_character_id"] = ""
-            return data
+            return _normalize(json.loads(result["text"]))
     except Exception:
         pass
 
