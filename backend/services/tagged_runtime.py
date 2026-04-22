@@ -1,10 +1,86 @@
+import random
+
 from models.tagged_character import CharacterV2, CharacterProfileV2, CharacterStateV2, NeedState, Tag, InterestTag, ContactEntry
 from services.tagged_profile_store import TAGGED_CHARACTERS
+
+POSITIVE_TRAIT_BANK = [
+    "Adventurous", "Ambitious", "Artistic", "Assertive", "Authentic", "Attentive", "Autonomous", "Blunt", "Brave", "Calm",
+    "Carefree", "Cautious", "Charismatic", "Compassionate", "Confident", "Considerate", "Creative", "Critical_thinking",
+    "Determined", "Diplomatic", "Empathetic", "Enthusiastic", "Fair_minded", "Flexible", "Forgiving", "Generous", "Genuine",
+    "Grateful", "Honest", "Humble", "Independent", "Insightful", "Intelligent", "Introspective", "Kind", "Loyal", "Modest",
+    "Motivated", "Optimistic", "Organized", "Patient", "Perceptive", "Persistent", "Philosophical", "Playful", "Positive",
+    "Pragmatic", "Proactive"
+]
+
+NEGATIVE_TRAIT_BANK = [
+    "Absent_minded", "Aggressive", "Apathetic", "Argumentative", "Arrogant", "Ashamed", "Bitter", "Bossy", "Callous",
+    "Conceited", "Confrontational", "Cowardly", "Critical", "Cruel", "Defiant", "Deceptive", "Demanding", "Despairing",
+    "Detached", "Disapproving", "Dishonest", "Distant", "Dominating", "Dour", "Envious", "Escapist", "Excitable", "Flippant",
+    "Forgetful", "Frustrated", "Gossipy", "Grim", "Hateful", "Hopeless", "Hypocritical", "Imperious", "Inconsiderate",
+    "Indecisive", "Insensitive", "Intrusive", "Irritable", "Manipulative", "Melancholy", "Moody", "Narcissistic", "Negative",
+    "Opportunistic", "Overbearing", "Pessimistic"
+]
+
+
+def _sample_traits(seed_key: str, positive_count: int = 3, negative_count: int = 2) -> list[Tag]:
+    rng = random.Random(seed_key)
+    positives = rng.sample(POSITIVE_TRAIT_BANK, k=min(positive_count, len(POSITIVE_TRAIT_BANK)))
+    negatives = rng.sample(NEGATIVE_TRAIT_BANK, k=min(negative_count, len(NEGATIVE_TRAIT_BANK)))
+    tags = [Tag(category="personality_positive", tag=t.lower()) for t in positives]
+    tags.extend(Tag(category="personality_negative", tag=t.lower()) for t in negatives)
+    return tags
+
+
+def _biases_from_traits(traits: list[Tag]) -> dict:
+    positive = {t.tag for t in traits if t.category == "personality_positive"}
+    negative = {t.tag for t in traits if t.category == "personality_negative"}
+
+    out = {
+        "volatility": 0.5,
+        "aggression_bias": 0.2,
+        "drama_bias": 0.5,
+        "authority_sensitivity": 0.3,
+        "insecurity": 0.4,
+        "social_patience": 45.0,
+    }
+
+    if "playful" in positive or "charismatic" in positive:
+        out["drama_bias"] += 0.12
+    if "loyal" in positive or "kind" in positive or "patient" in positive:
+        out["social_patience"] += 10.0
+    if "creative" in positive or "philosophical" in positive:
+        out["insecurity"] -= 0.05
+
+    if "aggressive" in negative or "confrontational" in negative or "argumentative" in negative:
+        out["aggression_bias"] += 0.25
+        out["volatility"] += 0.18
+    if "irritable" in negative or "moody" in negative or "excitable" in negative:
+        out["volatility"] += 0.15
+        out["drama_bias"] += 0.08
+    if "manipulative" in negative or "arrogant" in negative:
+        out["insecurity"] += 0.12
+    if "bossy" in negative or "imperious" in negative:
+        out["authority_sensitivity"] += 0.15
+    if "gossipy" in negative:
+        out["drama_bias"] += 0.12
+
+    out["volatility"] = max(0.0, min(1.0, out["volatility"]))
+    out["aggression_bias"] = max(0.0, min(1.0, out["aggression_bias"]))
+    out["drama_bias"] = max(0.0, min(1.0, out["drama_bias"]))
+    out["authority_sensitivity"] = max(0.0, min(1.0, out["authority_sensitivity"]))
+    out["insecurity"] = max(0.0, min(1.0, out["insecurity"]))
+    out["social_patience"] = max(10.0, min(90.0, out["social_patience"]))
+    return out
 
 
 def seed_default_tagged_characters():
     if TAGGED_CHARACTERS:
         return
+
+    ada_traits = _sample_traits("tag_ada")
+    bryn_traits = _sample_traits("tag_bryn")
+    ada_bias = _biases_from_traits(ada_traits)
+    bryn_bias = _biases_from_traits(bryn_traits)
 
     char1 = CharacterV2(
         profile=CharacterProfileV2(
@@ -17,6 +93,7 @@ def seed_default_tagged_characters():
                 Tag(category="temperament", tag="curious"),
                 Tag(category="social_style", tag="reserved"),
                 Tag(category="conflict_style", tag="dramatic"),
+                *ada_traits,
             ],
             appearance_tags=[Tag(category="style", tag="casual"), Tag(category="build", tag="average")],
             interests=[InterestTag(category="Knowledge", tag="psychology", rank=1), InterestTag(category="Activity", tag="cooking", rank=2)],
@@ -34,11 +111,12 @@ def seed_default_tagged_characters():
             fatigue=20,
             intoxication=0,
             emotional_temperature=28,
-            volatility=0.74,
-            aggression_bias=0.32,
-            drama_bias=0.82,
-            authority_sensitivity=0.61,
-            insecurity=0.66,
+            volatility=ada_bias["volatility"],
+            aggression_bias=ada_bias["aggression_bias"],
+            drama_bias=ada_bias["drama_bias"],
+            authority_sensitivity=ada_bias["authority_sensitivity"],
+            insecurity=ada_bias["insecurity"],
+            social_patience=ada_bias["social_patience"],
             affinity={"tag_bryn": 12.0},
             current_activity=None,
             roam_tiles_remaining=0,
@@ -61,6 +139,7 @@ def seed_default_tagged_characters():
         equipped_item_ids=[],
         memory=[],
         conversation_history=[],
+        subjective_views=[],
     )
 
     char2 = CharacterV2(
@@ -74,6 +153,7 @@ def seed_default_tagged_characters():
                 Tag(category="social_style", tag="warm"),
                 Tag(category="temperament", tag="observant"),
                 Tag(category="conflict_style", tag="passive_aggressive"),
+                *bryn_traits,
             ],
             appearance_tags=[Tag(category="style", tag="neat"), Tag(category="build", tag="average")],
             interests=[InterestTag(category="Activity", tag="conversation", rank=1), InterestTag(category="Knowledge", tag="history", rank=2)],
@@ -91,11 +171,12 @@ def seed_default_tagged_characters():
             fatigue=15,
             intoxication=0,
             emotional_temperature=20,
-            volatility=0.46,
-            aggression_bias=0.18,
-            drama_bias=0.44,
-            authority_sensitivity=0.28,
-            insecurity=0.37,
+            volatility=bryn_bias["volatility"],
+            aggression_bias=bryn_bias["aggression_bias"],
+            drama_bias=bryn_bias["drama_bias"],
+            authority_sensitivity=bryn_bias["authority_sensitivity"],
+            insecurity=bryn_bias["insecurity"],
+            social_patience=bryn_bias["social_patience"],
             affinity={"tag_ada": 18.0},
             current_activity=None,
             roam_tiles_remaining=0,
@@ -118,6 +199,7 @@ def seed_default_tagged_characters():
         equipped_item_ids=[],
         memory=[],
         conversation_history=[],
+        subjective_views=[],
     )
 
     TAGGED_CHARACTERS[char1.profile.id] = char1
