@@ -20,21 +20,58 @@ def _append_log(entry: dict):
     world["llm_logs"] = world["llm_logs"][-200:]
 
 
-def _recent_memories(character: dict, limit: int = 6) -> list[dict]:
+def _memory_score(item: dict, *, partner: str, topic: str, current_tick: int) -> float:
+    score = float(item.get("importance", 0.5) or 0.5) * 10.0
+    target = str(item.get("target", "") or "")
+    about = str(item.get("about", "") or "")
+    text = str(item.get("text", "") or "")
+    mem_topic = str(item.get("topic", "") or "")
+    source = str(item.get("source", "direct") or "direct")
+    speech_act = str(item.get("speech_act", "") or "")
+    tick = int(item.get("tick", current_tick) or current_tick)
+    age = max(0, current_tick - tick)
+
+    if partner and (target == partner or about == partner):
+        score += 8.0
+    if topic and (mem_topic == topic or topic.lower() in text.lower()):
+        score += 6.0
+    if speech_act in ["insult", "threat"]:
+        score += 4.0
+    if source == "direct":
+        score += 1.5
+    else:
+        score += 0.5
+
+    score -= age * 0.02
+    return score
+
+
+def _smart_memories(character: dict, world: dict, limit: int = 6) -> list[dict]:
     memory = character.get("memory", []) or []
-    out = []
-    for item in memory[-12:]:
+    state = character.get("state", {})
+    partner = str(state.get("conversation_partner_id", "") or state.get("awaiting_reply_from_id", "") or "")
+    topic = str(state.get("conversation_topic", "") or "")
+    current_tick = int(world.get("tick", 0))
+
+    scored = []
+    for item in memory:
         if not isinstance(item, dict):
             continue
-        out.append({
+        score = _memory_score(item, partner=partner, topic=topic, current_tick=current_tick)
+        scored.append((score, {
             "kind": item.get("kind", ""),
             "target": item.get("target", ""),
             "about": item.get("about", ""),
             "text": item.get("text", ""),
+            "topic": item.get("topic", ""),
+            "speech_act": item.get("speech_act", ""),
             "source": item.get("source", "direct"),
+            "importance": item.get("importance", 0.5),
             "tick": item.get("tick", 0),
-        })
-    return out[-limit:]
+        }))
+
+    scored.sort(key=lambda x: x[0], reverse=True)
+    return [item for _, item in scored[:limit]]
 
 
 def build_decision_prompt(character: dict, world: dict) -> str:
@@ -50,7 +87,7 @@ def build_decision_prompt(character: dict, world: dict) -> str:
     views = character.get("subjective_views", [])[-5:]
     grudges = state.get("grudges", [])[-5:]
     motivators = state.get("weekly_motivators", {})
-    recalled_memories = _recent_memories(character)
+    recalled_memories = _smart_memories(character, world)
 
     anti_greeting = ""
     recent_texts = [str(x.get("text", "")).lower() for x in recent_history]
@@ -86,6 +123,7 @@ Behavior:
 - Avoid dead-end answers
 - End with a question often
 - Prefer continuing the current topic if one exists
+- Prefer the MOST RELEVANT memories, not merely the most recent ones
 
 You may:
 - Refer to past impressions (views)
@@ -128,7 +166,7 @@ Grudges:
 Recent conversation:
 {json.dumps(recent_history, ensure_ascii=False)}
 
-Recalled memories and gossip:
+Smart recalled memories and gossip:
 {json.dumps(recalled_memories, ensure_ascii=False)}
 """.strip()
 
