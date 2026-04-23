@@ -21,6 +21,21 @@ NEGATIVE_TRAIT_BANK = [
     "Opportunistic", "Overbearing", "Pessimistic"
 ]
 
+APPEARANCE_BANK = {
+    "age": ["youthful", "mature", "elderly"],
+    "body_type": ["athletic", "slender", "curvy", "muscular"],
+    "hair_color": ["blonde", "brunette", "redhead", "grey"],
+    "eyes": ["bright", "dull", "expressive", "lifeless"],
+    "nose": ["small", "large", "proportional", "crooked"],
+    "mouth": ["full", "thin"],
+    "lips": ["thick", "thin"],
+    "face_shape": ["angular", "curved"],
+    "skin_tone": ["fair", "dark", "radiant", "pale"],
+    "height": ["short", "tall", "average"],
+    "posture": ["straight", "slouched", "confident", "hesitant"],
+    "style": ["casual", "neat", "plain", "flashy"],
+}
+
 
 def _sample_traits(seed_key: str, positive_count: int = 3, negative_count: int = 2) -> list[Tag]:
     rng = random.Random(seed_key)
@@ -28,6 +43,14 @@ def _sample_traits(seed_key: str, positive_count: int = 3, negative_count: int =
     negatives = rng.sample(NEGATIVE_TRAIT_BANK, k=min(negative_count, len(NEGATIVE_TRAIT_BANK)))
     tags = [Tag(category="personality_positive", tag=t.lower()) for t in positives]
     tags.extend(Tag(category="personality_negative", tag=t.lower()) for t in negatives)
+    return tags
+
+
+def _sample_appearance(seed_key: str) -> list[Tag]:
+    rng = random.Random(f"appearance::{seed_key}")
+    tags = []
+    for category, values in APPEARANCE_BANK.items():
+        tags.append(Tag(category=category, tag=rng.choice(values)))
     return tags
 
 
@@ -79,6 +102,8 @@ def seed_default_tagged_characters():
 
     ada_traits = _sample_traits("tag_ada")
     bryn_traits = _sample_traits("tag_bryn")
+    ada_appearance = _sample_appearance("tag_ada")
+    bryn_appearance = _sample_appearance("tag_bryn")
     ada_bias = _biases_from_traits(ada_traits)
     bryn_bias = _biases_from_traits(bryn_traits)
 
@@ -95,7 +120,7 @@ def seed_default_tagged_characters():
                 Tag(category="conflict_style", tag="dramatic"),
                 *ada_traits,
             ],
-            appearance_tags=[Tag(category="style", tag="casual"), Tag(category="build", tag="average")],
+            appearance_tags=ada_appearance,
             interests=[InterestTag(category="Knowledge", tag="psychology", rank=1), InterestTag(category="Activity", tag="cooking", rank=2)],
             activities=[],
             knowledge=[],
@@ -155,7 +180,7 @@ def seed_default_tagged_characters():
                 Tag(category="conflict_style", tag="passive_aggressive"),
                 *bryn_traits,
             ],
-            appearance_tags=[Tag(category="style", tag="neat"), Tag(category="build", tag="average")],
+            appearance_tags=bryn_appearance,
             interests=[InterestTag(category="Activity", tag="conversation", rank=1), InterestTag(category="Knowledge", tag="history", rank=2)],
             activities=[],
             knowledge=[],
