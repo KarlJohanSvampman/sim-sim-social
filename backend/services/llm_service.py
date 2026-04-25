@@ -42,6 +42,8 @@ def _memory_score(item: dict, *, partner: str, topic: str, current_tick: int) ->
         score += 6.0
     if speech_act in ["insult", "threat"]:
         score += 4.0
+    if item.get("personal_attack"):
+        score += 3.0
     if source == "direct":
         score += 1.5
     else:
@@ -72,11 +74,21 @@ def _smart_memories(character: dict, world: dict, limit: int = 6) -> list[dict]:
             "speech_act": item.get("speech_act", ""),
             "source": item.get("source", "direct"),
             "importance": item.get("importance", 0.5),
+            "personal_attack": item.get("personal_attack", False),
+            "attack_type": item.get("attack_type", ""),
             "tick": item.get("tick", 0),
         }))
 
     scored.sort(key=lambda x: x[0], reverse=True)
     return [item for _, item in scored[:limit]]
+
+
+def _appearance_for(character_id: str, world: dict) -> list[dict]:
+    if not character_id:
+        return []
+    other = (world.get("tagged_characters", {}) or {}).get(character_id) or {}
+    profile = other.get("profile", {}) or {}
+    return profile.get("appearance_tags", []) or []
 
 
 def build_decision_prompt(character: dict, world: dict) -> str:
@@ -86,6 +98,7 @@ def build_decision_prompt(character: dict, world: dict) -> str:
     awaiting = state.get("awaiting_reply_from_id", "")
     waiting_on = state.get("waiting_on_character_id", "")
     partner = state.get("conversation_partner_id", "")
+    active_target = awaiting or partner
     topic = state.get("conversation_topic", "")
 
     recent_history = character.get("conversation_history", [])[-6:]
@@ -93,6 +106,8 @@ def build_decision_prompt(character: dict, world: dict) -> str:
     grudges = state.get("grudges", [])[-5:]
     motivators = state.get("weekly_motivators", {})
     recalled_memories = _smart_memories(character, world)
+    self_appearance = profile.get("appearance_tags", []) or []
+    target_appearance = _appearance_for(active_target, world)
 
     anti_greeting = ""
     recent_texts = [str(x.get("text", "")).lower() for x in recent_history]
@@ -129,6 +144,13 @@ Behavior:
 - End with a question often
 - Prefer continuing the current topic if one exists
 - Prefer the MOST RELEVANT memories, not merely the most recent ones
+
+Appearance-aware dialogue:
+- You may comment on how another character looks, carries themselves, or seems, when relevant.
+- If emotion is annoyed, angry, furious, or smug, and speech_act is insult, you may dynamically target appearance or vibe.
+- Appearance insults should be personal but not slur-based; use traits like posture, eyes, style, height, or overall vibe.
+- Do not repeat the same appearance insult often. If using one, make it fit the current view, memory, or emotional context.
+- If you insult appearance, include appearance-related view_keywords such as creepy, slouched, flashy, dull, smug, insecure, awkward, or attention_seeking.
 
 You may:
 - Refer to past impressions (views)
@@ -167,6 +189,12 @@ Self:
     "drama_bias": state.get("drama_bias"),
     "insecurity": state.get("insecurity")
 }, ensure_ascii=False)}
+
+Self appearance:
+{json.dumps(self_appearance, ensure_ascii=False)}
+
+Active target appearance:
+{json.dumps(target_appearance, ensure_ascii=False)}
 
 Views:
 {json.dumps(views, ensure_ascii=False)}
